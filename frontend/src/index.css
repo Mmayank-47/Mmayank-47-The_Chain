@@ -1,0 +1,86 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Noto Sans', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  --color-primary: #004546;
+  --color-primary-container: #005f60;
+  --color-on-primary: #ffffff;
+  --color-on-primary-container: #8ed6d7;
+  --color-primary-fixed: #a6eff0;
+  --color-primary-fixed-dim: #8ad3d3;
+  --color-on-primary-fixed: #002020;
+  --color-on-primary-fixed-variant: #004f50;
+
+  --color-surface: #f9f9fc;
+  --color-surface-dim: #dadadc;
+  --color-surface-bright: #f9f9fc;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #f3f3f6;
+  --color-surface-container: #eeeef0;
+  --color-surface-container-high: #e8e8ea;
+  --color-surface-container-highest: #e2e2e5;
+  --color-on-surface: #1a1c1e;
+  --color-on-surface-variant: #3f4948;
+  --color-outline: #6f7979;
+  --color-outline-variant: #bec9c8;
+
+  --color-secondary: #895100;
+  --color-secondary-container: #fea946;
+  --color-secondary-fixed: #ffdcbd;
+  --color-secondary-fixed-dim: #ffb86d;
+  --color-on-secondary-fixed: #2c1600;
+
+  --color-tertiary: #7d1017;
+  --color-tertiary-container: #9e2a2b;
+
+  --color-error: #ba1a1a;
+  --color-verified: #1e6b47;
+}
+
+@layer base {
+  body {
+    font-family: 'Noto Sans', sans-serif;
+    overscroll-behavior: none;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+/* Custom scrollbar hiding for native mobile feel */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  display: inline-block;
+  line-height: 1;
+  text-transform: none;
+  letter-spacing: normal;
+  word-wrap: normal;
+  white-space: nowrap;
+  direction: ltr;
+  vertical-align: middle;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import random
 from dataclasses import dataclass, field
-from typing import Callable, Dict, Optional, Set
+from typing import Any, Callable, Dict, Optional, Set
 
 from core.bloom import BloomFilter
 from core.types import Message, Priority
@@ -32,7 +32,9 @@ class GossipEngine:
                  policy: Optional[SprayPolicy] = None, base_fanout: int = 3,
                  byte_budget: int = 4096, resend_after: float = 5.0,
                  rng: Optional[random.Random] = None,
-                 on_deliver: Optional[Callable[[Message], None]] = None):
+                 on_deliver: Optional[Callable[[Message], None]] = None,
+                 watchdog: Optional[Any] = None,
+                 trust_fn: Optional[Callable[[str, float], float]] = None):
         self.node_id = node_id
         self.store = store or CarryStore()
         self.policy = policy or SprayPolicy()
@@ -41,6 +43,8 @@ class GossipEngine:
         self.resend_after = resend_after
         self.rng = rng or random.Random()
         self.on_deliver = on_deliver
+        self.watchdog = watchdog
+        self.trust_fn = trust_fn
         self.outbox = PriorityOutbox()
         self._sent: Dict[str, Dict[str, float]] = {}   # msg_id -> peer -> time
 
@@ -48,13 +52,15 @@ class GossipEngine:
     def originate(self, msg: Message, now: float) -> bool:
         if not msg.created:
             msg.created = now
-        return self.store.add(msg, self.policy.tokens_for(msg.priority), now)
+        return self.store.add(msg, self.policy.tokens_for(msg.priority), now, from_id=self.node_id)
 
     def receive(self, msg: Message, tokens: Optional[int], now: float,
                 from_id: Optional[str] = None) -> bool:
         if msg.expired(now):
             return False
-        if not self.store.add(msg, self.policy.clamp(msg.priority, tokens), now):
+        if self.watchdog is not None and from_id is not None:
+            self.watchdog.observe_forward(from_id, msg.msg_id, now)
+        if not self.store.add(msg, self.policy.clamp(msg.priority, tokens), now, from_id=from_id):
             if from_id:
                 self._mark(msg.msg_id, from_id, now)
             return False
@@ -93,6 +99,21 @@ class GossipEngine:
         self.store.expire(now)
         for mid in [m for m in self._sent if not self.store.seen(m)]:
             del self._sent[mid]
+
+        # Watchdog forwarding deadline check & multipath reroute
+        if self.watchdog is not None:
+            failed = self.watchdog.tick(now)
+            for failed_peer, failed_mid, is_crit in failed:
+                if failed_mid in self._sent and failed_peer in self._sent[failed_mid]:
+                    del self._sent[failed_mid][failed_peer]
+                c = self.store.get(failed_mid)
+                if c is not None:
+                    alt = [n for n in neighbors.values()
+                           if n.id != failed_peer
+                           and (self.watchdog is None or self.watchdog.is_trusted(n.id, now))]
+                    for n in alt[:2]:
+                        self.outbox.push((n.id, failed_mid), c.msg.priority, (n.id, failed_mid))
+
         density = len(neighbors)
         for mid, c in self.store.items():
             lacking = [n for n in neighbors.values()
@@ -103,7 +124,12 @@ class GossipEngine:
             if not lacking:
                 continue
             k = self.fanout(len(lacking), density, battery, c.msg.priority)
-            lacking.sort(key=lambda n: (-n.battery, self.rng.random()))   # prefer charged relays
+            if self.trust_fn is not None:
+                lacking.sort(key=lambda n: (-self.trust_fn(n.id, now), -n.battery, self.rng.random()))
+            elif self.watchdog is not None:
+                lacking.sort(key=lambda n: (-float(self.watchdog.is_trusted(n.id, now)), -n.battery, self.rng.random()))
+            else:
+                lacking.sort(key=lambda n: (-n.battery, self.rng.random()))
             for n in lacking[:k]:
                 self.outbox.push((n.id, mid), c.msg.priority, (n.id, mid))
         return self._drain(neighbors, now)
@@ -127,6 +153,8 @@ class GossipEngine:
                 continue
             used += size
             self._mark(mid, peer, now)
+            if self.watchdog is not None:
+                self.watchdog.track(peer, mid, now, is_critical=(c.msg.priority == Priority.DISTRESS))
             out.append(Transmission(peer, c.msg, give))
             if keep is not None:
                 if keep <= 0:

@@ -1,0 +1,224 @@
+---
+name: The Chain
+colors:
+  surface: '#f9f9fc'
+  surface-dim: '#dadadc'
+  surface-bright: '#f9f9fc'
+  surface-container-lowest: '#ffffff'
+  surface-container-low: '#f3f3f6'
+  surface-container: '#eeeef0'
+  surface-container-high: '#e8e8ea'
+  surface-container-highest: '#e2e2e5'
+  on-surface: '#1a1c1e'
+  on-surface-variant: '#3f4948'
+  inverse-surface: '#2f3133'
+  inverse-on-surface: '#f0f0f3'
+  outline: '#6f7979'
+  outline-variant: '#bec9c8'
+  surface-tint: '#16696a'
+  primary: '#004546'
+  on-primary: '#ffffff'
+  primary-container: '#005f60'
+  on-primary-container: '#8ed6d7'
+  inverse-primary: '#8ad3d3'
+  secondary: '#895100'
+  on-secondary: '#ffffff'
+  secondary-container: '#fea946'
+  on-secondary-container: '#6e4000'
+  tertiary: '#7d1017'
+  on-tertiary: '#ffffff'
+  tertiary-container: '#9e2a2b'
+  on-tertiary-container: '#ffb9b4'
+  error: '#ba1a1a'
+  on-error: '#ffffff'
+  error-container: '#ffdad6'
+  on-error-container: '#93000a'
+  primary-fixed: '#a6eff0'
+  primary-fixed-dim: '#8ad3d3'
+  on-primary-fixed: '#002020'
+  on-primary-fixed-variant: '#004f50'
+  secondary-fixed: '#ffdcbd'
+  secondary-fixed-dim: '#ffb86d'
+  on-secondary-fixed: '#2c1600'
+  on-secondary-fixed-variant: '#683c00'
+  tertiary-fixed: '#ffdad7'
+  tertiary-fixed-dim: '#ffb3ae'
+  on-tertiary-fixed: '#410004'
+  on-tertiary-fixed-variant: '#8a1b1e'
+  background: '#f9f9fc'
+  on-background: '#1a1c1e'
+  surface-variant: '#e2e2e5'
+typography:
+  headline-lg:
+    fontFamily: Noto Sans
+    fontSize: 32px
+    fontWeight: '700'
+    lineHeight: 40px
+  headline-lg-mobile:
+    fontFamily: Noto Sans
+    fontSize: 28px
+    fontWeight: '700'
+    lineHeight: 36px
+  headline-md:
+    fontFamily: Noto Sans
+    fontSize: 24px
+    fontWeight: '700'
+    lineHeight: 32px
+  headline-sm:
+    fontFamily: Noto Sans
+    fontSize: 20px
+    fontWeight: '600'
+    lineHeight: 28px
+  body-lg:
+    fontFamily: Noto Sans
+    fontSize: 18px
+    fontWeight: '400'
+    lineHeight: 26px
+  body-lg-bold:
+    fontFamily: Noto Sans
+    fontSize: 18px
+    fontWeight: '700'
+    lineHeight: 26px
+  body-md:
+    fontFamily: Noto Sans
+    fontSize: 16px
+    fontWeight: '500'
+    lineHeight: 24px
+  action-primary:
+    fontFamily: Noto Sans
+    fontSize: 20px
+    fontWeight: '700'
+    lineHeight: 28px
+    letterSpacing: 0.2px
+  action-secondary:
+    fontFamily: Noto Sans
+    fontSize: 18px
+    fontWeight: '600'
+    lineHeight: 24px
+  label-status:
+    fontFamily: Noto Sans
+    fontSize: 15px
+    fontWeight: '700'
+    lineHeight: 20px
+    letterSpacing: 0.5px
+  label-caption:
+    fontFamily: Noto Sans
+    fontSize: 14px
+    fontWeight: '600'
+    lineHeight: 20px
+rounded:
+  sm: 0.25rem
+  DEFAULT: 0.5rem
+  md: 0.75rem
+  lg: 1rem
+  xl: 1.5rem
+  full: 9999px
+spacing:
+  gutter: 1rem
+  gutter-mobile: 0.75rem
+  margin: 1rem
+  margin-mobile: 0.75rem
+  space-xs: 0.25rem
+  space-sm: 0.5rem
+  space-md: 1rem
+  space-lg: 1.5rem
+  space-xl: 2rem
+  space-xxl: 3rem
+---
+
+## Brand & Style
+
+The design system establishes a high-stakes, life-critical utility posture engineered specifically for extreme, compromised conditions: flooded environments, rain-streaked cracked screens, low-battery states, and physical duress. It avoids decorative tech tropes, frantic alarmism, or consumer polish in favor of calm, decisive authority rooted in modern utilitarian public safety and Material 3 design principles.
+
+### Key Tenets
+- **Calm Authority under Crisis:** The interface must de-escalate panic. Feedback is rapid, steady, and clear.
+- **Fail-Safe Legibility:** Information hierarchy is direct, stark, and unambiguous, supporting multi-script comprehension (Latin, Devanagari) under harsh sunlight or cracked glass.
+- **Tactile Reliability:** Structural elements prioritize clumsy or wet finger navigation with exaggerated target boundaries and defensive spacing.
+- **Zero Ambiguity:** State communication never relies on color alone. Every indicator pairs high-contrast iconography, explicit structural text labels, and semantic color coding.
+
+## Colors
+
+The palette is engineered to meet strict WCAG AAA contrast thresholds against off-white cement backdrops, maintaining perceptual distinction during reduced backlight conditions or screen damage.
+
+### Roles & Semantic Tiers
+- **Primary (`#005F60`):** Authoritative deep teal. Anchors primary actions, network synchronization states, and system-level confirmations without triggering visual distress.
+- **Surface Canvas (`#F7F6F2`):** Warm, low-glare cement off-white that reduces eye strain in dark shelters while cutting outdoor reflection.
+- **Surface Raised (`#FFFFFF`):** High-contrast crisp white cards for prioritized contextual information and interactive modules.
+- **Text & Core Borders (`#1A1C1E`):** Near-black charcoal delivering maximum contrast ratios on all card and canvas surfaces.
+- **Muted Text / Secondary Outlines (`#49454F`):** Legible secondary information (timestamps, signal attenuation stats, device hops).
+- **Surface Outlines (`#DDE2DF`):** Structural, grounding borders that retain component boundary separation even if surface color values wash out in heavy rain or low backlight.
+- **Warning / Pending (`#B36B00`):** Amber tone reserved strictly for pending synchronization, mesh delays, or flood advisory notices.
+- **Critical / Abort (`#9E2A2B`):** Muted brick red strictly isolated to aborting SOS transmissions, emergency overrides, or battery-depletion warnings.
+- **Verified / Safe (`#1E6B47`):** Deep forest green reserved for acknowledged messages, verified human contacts, and successful mesh relays.
+
+## Typography
+
+Typography uses `Noto Sans` across all display scales to guarantee seamless glyph parity, baseline alignment, and rendering clarity between English, Hindi, Marathi, and other Indic scripts during offline font loading.
+
+### Scaling & Legibility Rules
+- **Base Reading Scale:** Standard body text is elevated to a baseline of 18px (`body-lg`) to remain legible despite rain droplets distorting the screen pixels.
+- **Action Dominance:** Primary interactive buttons scale at 20px (`action-primary`) bold to support split-second decision-making.
+- **De-emphasized Text Floor:** No functional UI label drops below 14px. Any text below this threshold is unreadable on severely cracked or water-refracted displays.
+- **Line Heights:** Generous line heights prevent vertical overcrowding when complex Devanagari vowel ligatures (matras) render adjacent to Roman numerals.
+
+## Layout & Spacing
+
+The layout is built on a disciplined single-column fluid mobile model prioritizing physical thumb reachability and immediate comprehension.
+
+### Layout Principles
+- **Touch Target Safeguard:** All interactable targets must span a physical minimum of 64px in vertical height, allowing wet hands and erratic finger input to trigger actions without misfires.
+- **Thumb-Zone Prioritization:** Mission-critical emergency calls, relay broadcast controls, and urgent status filters anchor strictly within the lower 40% of the viewport.
+- **Card Separations:** Stacked cards and status listings utilize a standard `1rem` gap with explicit outer margins (`0.75rem` on mobile, `1rem` on larger hand units) to prevent unintended double-taps on dense mesh telemetry feeds.
+- **Breakpoint Dynamics:** Scales smoothly from compact 360dp Android devices up to larger rugged field tablets by bounding central content to a maximum readable width of 640dp, maintaining centered ergonomics.
+
+## Elevation & Depth
+
+To maximize battery life and maintain visual contrast on budget LCD screens with low contrast ratios, depth does not rely on soft-blurs, diffuse ambient drop-shadows, or complex lighting simulations.
+
+### Surface System
+- **Tier 0 (Base Canvas):** Warm off-white `#F7F6F2`, zero elevation.
+- **Tier 1 (Cards, Modules, Input Containers):** Pure `#FFFFFF` surface framed by an omnipresent 1.5px solid border in `#DDE2DF`.
+- **Tier 2 (Sticky App Bars, Bottom Action Trays):** Pure `#FFFFFF` anchored by a distinct 2px bottom/top separator in `#1A1C1E` (12% opacity) and a direct, functional 2dp non-blurred boundary drop (`0 2px 0 rgba(26,28,30,0.08)`).
+- **Tier 3 (Urgent Sheets, Critical Dialogs):** `#FFFFFF` paired with an aggressive high-contrast `#1A1C1E` outer border (2px) over a heavy 60% opacity solid scrim (`#1A1C1E`). Soft glassmorphic effects are prohibited.
+
+## Shapes
+
+The shape vocabulary uses structured, predictable curvature to balance structural toughness with touch comfort.
+
+### Radius System
+- **Cards, Modals, Action Panels:** 16dp (`rounded-xl` equivalent in this system) to establish contained, protective modules that prevent visual clutter.
+- **Critical Action Buttons & Pills:** Fully pill-shaped (28dp–32dp radius) on single-action primary targets, or uniform 12dp on segmented status toggles, cleanly signaling interactive clickability.
+- **System Badges & Metrics Containers:** 8dp uniform radius, maintaining structural alignment with data tables and connectivity rosters.
+
+## Components
+
+### Buttons
+- **Primary CTA:** Minimum 64px height. Solid `#005F60` fill, white `#FFFFFF` text in 20px bold (`action-primary`), paired with a leading 24px icon. Full-width on mobile. Active states use a deeper `#0B4F50` fill with no motion scaling.
+- **Abort / Critical Action:** Minimum 64px height. Solid `#9E2A2B` fill, `#FFFFFF` text, paired with a mandatory `close` or `warning` icon. Reserved strictly for destructive cancellation or stopping distress broadcasts.
+- **Secondary / Action Outlined:** 64px height, `#FFFFFF` surface with a 2px solid `#005F60` border, `#005F60` text, and zero background transparency.
+
+### Cards & Telemetry Blocks
+- Pure white background (`#FFFFFF`), 16dp rounded corners, and a 1.5px solid `#DDE2DF` boundary border.
+- Internal padding is set to `1.25rem` (`20px`).
+- Never rely on elevation shadows alone to separate cards; every card must possess structural border definition.
+
+### Status Indicators & Badges
+- Triple-verification pattern is mandatory for every state:
+  1. **Icon:** Clear system icon (e.g., `check_circle`, `water_drop`, `wifi_tethering`, `battery_full`).
+  2. **Text:** Explicit textual label (`CONNECTED MESH`, `WATER RISING`, `PENDING SYNC`).
+  3. **Tonal Boundary:** High-contrast background tint with solid border matching the semantic color family.
+- Example for Pending Mesh Sync: Background `#FEF3C7`, Border 1.5px `#B36B00`, Text `#B36B00`, Icon `sync_problem`.
+
+### Input Fields
+- Minimum height of 64px. Background `#FFFFFF` with 2px continuous border in `#49454F`.
+- On focus: 2.5px solid border in `#005F60`.
+- Text size: 18px (`body-lg`) with high-contrast `#1A1C1E` placeholder styling (opacity at least 60% for outdoor visibility).
+
+### Checkboxes, Radios, and Switches
+- Touch hit target of 64px x 64px with a 28px visible target control.
+- Checkbox marks and radio pips use 3px solid strokes in `#005F60` over high-contrast white backgrounds.
+
+### Mesh Peer List Items
+- Stacked rows with a minimum height of 72px.
+- Incorporates direct human-readable signal strength (`3 hops`, `Direct BT`, `Wi-Fi Direct`) paired with explicit numeric signal or battery telemetry.
+- Separated by a 1px solid horizontal rule (`#DDE2DF`).

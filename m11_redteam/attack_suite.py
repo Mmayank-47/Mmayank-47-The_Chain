@@ -9,6 +9,11 @@ import sys
 from dataclasses import dataclass
 from typing import Callable, Dict, List
 
+from core.types import HLC, Message, Priority
+from m0_transport.dtn import CarryStore
+from m0_transport.ingress import IngressGuard
+from m1_identity.keys import dev_fleet
+from m1_identity.ratelimit import IdentityLimiter
 from m3_verify import challenge as ch
 from m3_verify.p_valid import Verifier
 from m4_hazard.flood_model import FloodModel
@@ -196,8 +201,44 @@ def battery_curve_fraud() -> Result:
     return Result("battery_curve_fraud", off, on, 0.0, "flat or rising battery curves")
 
 
+def store_flooding() -> Result:
+    # 1. Undefended store: no per-origin or per-neighbour quotas (None), flooder fills all 500 slots
+    undef_store = CarryStore(capacity=512, max_per_origin=None, max_per_neighbour=None)
+    for i in range(500):
+        m = Message("m9.case", Priority.DISTRESS, "flooder", {"seq": i}, HLC(1, i, "flooder"), ttl_s=3600.0)
+        undef_store.add(m, None, 0.0, from_id="evil_peer")
+    flooder_undef = len(undef_store)
+
+    # 2. Defended store: per-origin quota=32, per-neighbour quota=64
+    def_store = CarryStore(capacity=512, max_per_origin=32, max_per_neighbour=64)
+    for i in range(500):
+        m = Message("m9.case", Priority.DISTRESS, "flooder", {"seq": i}, HLC(1, i, "flooder"), ttl_s=3600.0)
+        def_store.add(m, None, 0.0, from_id="evil_peer")
+    flooder_def = len(def_store)
+    assert def_store.origin_count("flooder") <= 32
+    assert flooder_def <= 32
+
+    # 3. Stranger lane: unenrolled victim gets exactly 1 distress through, stranger non-distress blocked
+    reg = dev_fleet(["honest_node"])
+    lim = IdentityLimiter(reg, base_rate=1.0, base_burst=5.0, stranger_burst=1.0)
+    guard = IngressGuard(limiter=lim, stranger_lane=True)
+    victim_admitted = 0
+    for i in range(5):
+        m = Message("m9.case", Priority.DISTRESS, "victim_stranger", {"seq": i}, HLC(1, i, "victim_stranger"), ttl_s=3600.0)
+        if guard.admit(m, "victim_stranger", 0.0) is not None:
+            victim_admitted += 1
+    assert victim_admitted == 1
+
+    m_chatter = Message("m8.event", Priority.CHATTER, "victim_stranger", {"k": "beat"}, HLC(1, 10, "victim_stranger"), ttl_s=3600.0)
+    assert guard.admit(m_chatter, "victim_stranger", 1.0) is None
+
+    off = flooder_undef / 500.0
+    on = flooder_def / 500.0
+    return Result("store_flooding", off, on, 0.10, f"{flooder_def}/500 flood quota capped, stranger lane 1 allowed")
+
+
 ALL: List[Callable[[], Result]] = [forged_credentials, sybil_swarm, packet_flood, lure_into_floodwater,
-                                   decoy_emergencies, hazard_poisoning, battery_curve_fraud]
+                                   decoy_emergencies, hazard_poisoning, battery_curve_fraud, store_flooding]
 
 
 def run_all() -> List[Result]:

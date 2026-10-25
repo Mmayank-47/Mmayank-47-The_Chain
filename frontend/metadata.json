@@ -1,0 +1,6 @@
+{
+  "name": "The Chain - Offline Mesh Aid",
+  "description": "Offline disaster emergency aid application with Jetpack Compose screens, mesh network relay, and complete Kotlin Android architecture.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

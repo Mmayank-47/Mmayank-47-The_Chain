@@ -25,10 +25,11 @@ from __future__ import annotations
 import math
 from collections import Counter
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, Optional, Protocol, Tuple
+from typing import Any, Callable, Dict, Optional, Protocol, Set, Tuple
 
+from core import crypto
 from core.bloom import BloomFilter
-from core.types import Message, Priority, event_priority
+from core.types import Message, Priority, canonical, event_priority
 
 # Allowlist: kind -> priority. None = derived from the payload (see _m8_priority).
 # Kinds are string literals on purpose: M0 must not import the layers above it.
@@ -57,6 +58,33 @@ class Limiter(Protocol):
     def allow(self, node: str, now: float, cost: float = 1.0) -> bool: ...
 
 
+class ReplayWindow:
+    """Sliding replay window for a single sender (IPsec RFC 4303 style)."""
+
+    def __init__(self, size: int = 64):
+        self.size = size
+        self.max_seq = 0
+        self._seen: Set[int] = set()
+
+    def check_and_add(self, seq: int) -> Tuple[bool, str]:
+        """Returns (accepted: bool, reason: str)."""
+        if not isinstance(seq, int) or isinstance(seq, bool) or seq <= 0:
+            return False, "invalid_seq"
+        if seq > self.max_seq:
+            self.max_seq = seq
+            self._seen.add(seq)
+            cutoff = self.max_seq - self.size
+            self._seen = {s for s in self._seen if s > cutoff}
+            return True, "ok"
+        diff = self.max_seq - seq
+        if diff >= self.size:
+            return False, "out_of_window"
+        if seq in self._seen:
+            return False, "replayed"
+        self._seen.add(seq)
+        return True, "ok"
+
+
 @dataclass(frozen=True)
 class IngressLimits:
     max_ttl_s: float = 24 * 3600.0
@@ -75,15 +103,49 @@ class IngressLimits:
 
 class IngressGuard:
     def __init__(self, limits: Optional[IngressLimits] = None, limiter: Optional[Limiter] = None,
-                 allowed: Optional[Dict[str, Optional[Priority]]] = None):
+                 allowed: Optional[Dict[str, Optional[Priority]]] = None,
+                 stranger_lane: bool = True,
+                 signer: Optional[crypto.Signer] = None,
+                 replay_window_size: int = 64):
         self.limits = limits or IngressLimits()
         self.limiter = limiter
         self.allowed = dict(KIND_PRIORITY if allowed is None else allowed)
+        self.stranger_lane = stranger_lane
+        self.signer = signer
+        self.replay_window_size = replay_window_size
+        self._replay_windows: Dict[str, ReplayWindow] = {}
         self.dropped: Counter = Counter()
 
     def _drop(self, why: str):
         self.dropped[why] += 1
         return None
+
+    def get_replay_window(self, sender: str) -> ReplayWindow:
+        if sender not in self._replay_windows:
+            self._replay_windows[sender] = ReplayWindow(self.replay_window_size)
+        return self._replay_windows[sender]
+
+    def authenticate_frame(self, frm: str, f: dict) -> Optional[str]:
+        """Authenticate link frame and check replay protection.
+
+        Returns the authenticated sender ID, or None if spoofed / unauthenticated / replayed.
+        """
+        if self.signer is None:
+            return frm
+        snd = f.get("snd")
+        seq = f.get("seq")
+        sig = f.get("sig")
+        if not (isinstance(snd, str) and snd and isinstance(seq, int) and not isinstance(seq, bool) and isinstance(sig, str)):
+            return self._drop("frame_unauthenticated")
+        if frm and frm != snd:
+            return self._drop("frame_spoofed_sender")
+        body = {k: v for k, v in f.items() if k != "sig"}
+        if not self.signer.verify(snd, canonical(body), sig):
+            return self._drop("frame_bad_sig")
+        ok, reason = self.get_replay_window(snd).check_and_add(seq)
+        if not ok:
+            return self._drop("frame_" + reason)
+        return snd
 
     # ---- raw frames -------------------------------------------------------------------------
     def frame_ok(self, data: Any) -> bool:
@@ -132,8 +194,6 @@ class IngressGuard:
     def admit(self, msg: Message, from_id: str, now: float) -> Optional[Message]:
         """Return the sanitised message to hand to the engine, or None to drop it."""
         L = self.limits
-        if self.limiter is not None and not self.limiter.allow(from_id, now, 1.0):
-            return self._drop("rate_limited")
         if msg.kind not in self.allowed:
             return self._drop("kind_not_allowed")
         if not isinstance(msg.payload, dict):
@@ -153,6 +213,16 @@ class IngressGuard:
         prio = self.allowed[msg.kind]
         if prio is None:
             prio = _m8_priority(msg.payload)
+
+        if self.limiter is not None and not self.limiter.allow(from_id, now, 1.0):
+            # Low-trust, low-rate stranger lane: an unenrolled sender gets distress through
+            if (self.stranger_lane and prio == Priority.DISTRESS
+                    and hasattr(self.limiter, "allow_stranger")
+                    and self.limiter.allow_stranger(from_id, now, 1.0)):
+                pass
+            else:
+                return self._drop("rate_limited")
+
         # msg_id covers kind/origin/payload/hlc only, so rewriting these fields keeps the identity
         # of the message (dedupe across honest and sanitising relays still works).
         return Message(msg.kind, prio, msg.origin, msg.payload, msg.hlc, dest_cell=msg.dest_cell,

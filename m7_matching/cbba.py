@@ -13,12 +13,21 @@ import math
 from dataclasses import dataclass
 from typing import Dict, Iterable, List, Optional, Tuple
 
+from core import crypto
+from core.types import canonical
+
 
 @dataclass(frozen=True)
 class Entry:
     epoch: int
     task: Optional[str]
     bid: float
+    sig: Optional[str] = None
+
+
+def entry_digest(agent_id: str, epoch: int, task: Optional[str], bid: float) -> bytes:
+    """Canonical bytes for signing an auction bid entry."""
+    return canonical([agent_id, epoch, task, round(float(bid), 9)])
 
 
 def _beats(bid: float, who: str, obid: float, owho: str) -> bool:
@@ -26,10 +35,18 @@ def _beats(bid: float, who: str, obid: float, owho: str) -> bool:
 
 
 class Bidder:
-    def __init__(self, agent_id: str, utilities: Dict[str, float]):
+    def __init__(self, agent_id: str, utilities: Dict[str, float],
+                 signer: Optional[crypto.Signer] = None):
         self.id = agent_id
         self.u = dict(utilities)
-        self.table: Dict[str, Entry] = {agent_id: Entry(0, None, 0.0)}
+        self.signer = signer
+        self.table: Dict[str, Entry] = {agent_id: self._make_entry(0, None, 0.0)}
+
+    def _make_entry(self, epoch: int, task: Optional[str], bid: float) -> Entry:
+        sig = None
+        if self.signer is not None:
+            sig = self.signer.sign(self.id, entry_digest(self.id, epoch, task, bid))
+        return Entry(epoch, task, bid, sig)
 
     def set_utilities(self, u: Dict[str, float]):
         self.u = dict(u)
@@ -51,6 +68,10 @@ class Bidder:
         for a, e in table.items():
             if a == self.id:
                 continue
+            # Task 2: Verify signature by author; reject forged high-epoch entries
+            if self.signer is not None:
+                if not e.sig or not self.signer.verify(a, entry_digest(a, e.epoch, e.task, e.bid), e.sig):
+                    continue
             cur = self.table.get(a)
             if cur is None or e.epoch > cur.epoch:
                 self.table[a] = e
@@ -63,7 +84,7 @@ class Bidder:
             bid, other = self.u.get(own.task, -math.inf), self._best_other(own.task)
             if bid > 0 and (other is None or _beats(bid, self.id, other[0], other[1])):
                 if abs(bid - own.bid) > 1e-12:
-                    self.table[self.id] = Entry(own.epoch + 1, own.task, bid)
+                    self.table[self.id] = self._make_entry(own.epoch + 1, own.task, bid)
                     return True
                 return False
         best: Optional[Tuple[float, str]] = None
@@ -75,7 +96,7 @@ class Bidder:
                 continue
             if best is None or bid > best[0] + 1e-12 or (abs(bid - best[0]) <= 1e-12 and t < best[1]):
                 best = (bid, t)
-        target = Entry(own.epoch + 1, best[1], best[0]) if best else Entry(own.epoch + 1, None, 0.0)
+        target = self._make_entry(own.epoch + 1, best[1], best[0]) if best else self._make_entry(own.epoch + 1, None, 0.0)
         if (target.task, target.bid) == (own.task, own.bid):
             return False
         self.table[self.id] = target

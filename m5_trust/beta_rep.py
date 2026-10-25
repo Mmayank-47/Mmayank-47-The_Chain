@@ -18,6 +18,8 @@ EVENTS: Dict[str, Tuple[float, float]] = {
     "failed_challenge":   (0.0, 3.0),
     "false_hazard":       (0.0, 2.0),
     "equivocation":       (0.0, 6.0),   # signed, conflicting M8 logs (a fork); recorded locally only
+    "forward_success":    (0.5, 0.0),   # hop ack or watchdog observed forward
+    "forward_failure":    (0.0, 3.0),   # watchdog observed dropped packet / timeout
 }
 
 
