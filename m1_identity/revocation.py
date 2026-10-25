@@ -5,11 +5,11 @@ Merge is set union, so any gossip order converges; forged entries never enter th
 """
 from __future__ import annotations
 
-import hashlib
-import hmac
 import json
 from dataclasses import dataclass
 from typing import Dict, FrozenSet, Iterable, List, Set, Tuple
+
+from core import crypto
 
 Root = Tuple[bytes, FrozenSet[str]]          # (issuer key stand-in, roles the issuer may grant)
 
@@ -19,7 +19,11 @@ def _canon(obj) -> bytes:
 
 
 def sign_with(key: bytes, body: list) -> str:
-    return hmac.new(key, _canon(body), hashlib.sha256).hexdigest()
+    return crypto.mac(key, _canon(body))
+
+
+def verify_with(key: bytes, body: list, sig) -> bool:
+    return crypto.mac_ok(key, _canon(body), sig)
 
 
 @dataclass(frozen=True)
@@ -50,7 +54,7 @@ class RevocationList:
         root = self.roots.get(r.issuer)
         if root is None or r.role not in root[1]:
             return False
-        return hmac.compare_digest(sign_with(root[0], r.body()), r.sig)
+        return verify_with(root[0], r.body(), r.sig)
 
     def add(self, r: Revocation) -> bool:
         if r in self._s or not self._valid(r):

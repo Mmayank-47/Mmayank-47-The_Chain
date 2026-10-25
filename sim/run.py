@@ -47,15 +47,22 @@ def monte_carlo(scn, policy_cls=NaivePolicy, runs=30):
     return out
 
 
+def calibration(results, scenario="clean", bins=5):
+    """Reliability table for ONE named scenario. (The old main() printed the last scenario's pairs,
+    scarce+split, under a 'clean' label.)"""
+    return reliability(results[scenario]["_pairs"], bins)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--runs", type=int, default=30)
     runs = ap.parse_args().runs
     print(f"{'scenario':<10}" + "".join(f"{c:>18}" for c in COLS))
+    results = {}
     for name, kw in SCENARIOS.items():
-        res = monte_carlo(Scenario(**kw), runs=runs)
+        res = results[name] = monte_carlo(Scenario(**kw), runs=runs)
         print(f"{name:<10}" + "".join(f"{res[c][0]:>10.2f} ±{res[c][1]:.2f}" for c in COLS))
-    print("\ncalibration (clean, p_valid vs observed real):", reliability(res["_pairs"]))
+    print("\ncalibration (clean, p_valid vs observed real):", calibration(results, "clean"))
 
 
 if __name__ == "__main__":

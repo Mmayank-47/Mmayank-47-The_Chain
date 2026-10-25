@@ -53,15 +53,34 @@ class HLC:
 
 ZERO_HLC = HLC(0, 0, "")
 
+MAX_DRIFT_MS = 5 * 60 * 1000     # a remote stamp may lead our physical clock by at most this much
+MAX_COUNTER = 1 << 20            # no honest node logs a million events inside one millisecond
+
+
+class ClockDrift(ValueError):
+    """A remote HLC is too far ahead of local time (or malformed) to be merged."""
+
 
 class HLClock:
-    """Standard HLC (Kulkarni et al.). now() = local/send event, update() = receive."""
+    """Standard HLC (Kulkarni et al.). now() = local/send event, update() = receive.
 
-    def __init__(self, node: str, now_ms: Optional[Callable[[], int]] = None):
+    An unbounded HLC lets one hostile or broken phone drag every clock (and every M8 lease, which
+    is judged on HLC wall time) arbitrarily far into the future. `max_drift_ms` bounds how far
+    ahead of OUR physical clock a remote stamp may be; None disables the bound.
+    """
+
+    def __init__(self, node: str, now_ms: Optional[Callable[[], int]] = None,
+                 max_drift_ms: Optional[int] = MAX_DRIFT_MS):
         self.node = node
         self._now = now_ms or (lambda: int(time.time() * 1000))
+        self.max_drift_ms = max_drift_ms
         self._wall = 0
         self._counter = 0
+
+    def drift_ok(self, remote: HLC) -> bool:
+        if remote.wall < 0 or not 0 <= remote.counter <= MAX_COUNTER:
+            return False
+        return self.max_drift_ms is None or remote.wall - self._now() <= self.max_drift_ms
 
     def now(self) -> HLC:
         pt = self._now()
@@ -72,6 +91,8 @@ class HLClock:
         return HLC(self._wall, self._counter, self.node)
 
     def update(self, remote: HLC) -> HLC:
+        if not self.drift_ok(remote):
+            raise ClockDrift(f"remote HLC {remote.to_json()} is outside the allowed drift")
         pt = self._now()
         new = max(self._wall, remote.wall, pt)
         if new == self._wall == remote.wall:

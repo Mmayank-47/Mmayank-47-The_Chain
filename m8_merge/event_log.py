@@ -2,28 +2,17 @@
 
 Events from one node must arrive in seq order; early ones are buffered until the gap fills
 (anti-entropy fills gaps). A node showing two different events for one seq is flagged as a fork.
+
+Signatures are checked by a core.crypto.Signer, in practice M1's Registry: an event only counts if
+its author is an enrolled hardware key. There is deliberately no default signer.
 """
 from __future__ import annotations
 
-import hashlib
-import hmac
 from dataclasses import dataclass
 from typing import Dict, List, Set
 
+from core.crypto import Signer
 from core.types import HLC, canonical, sha256_hex
-
-
-class DevSigner:
-    """STAND-IN for M1's hardware-bound keys. Insecure on purpose: key = hash(node id)."""
-
-    def _key(self, node: str) -> bytes:
-        return hashlib.sha256(b"dev-only:" + node.encode()).digest()
-
-    def sign(self, node: str, data: bytes) -> str:
-        return hmac.new(self._key(node), data, "sha256").hexdigest()
-
-    def verify(self, node: str, data: bytes, sig: str) -> bool:
-        return hmac.compare_digest(self.sign(node, data), sig)
 
 
 def _body(node, seq, prev, hlc, kind, data) -> dict:
@@ -56,8 +45,8 @@ class Event:
 
 
 class EventStore:
-    def __init__(self, signer=None, max_pending: int = 256):
-        self.signer = signer or DevSigner()
+    def __init__(self, signer: Signer, max_pending: int = 256):
+        self.signer = signer
         self.max_pending = max_pending          # caps memory a hostile peer can make us buffer
         self.logs: Dict[str, List[Event]] = {}
         self.pending: Dict[str, Dict[int, Event]] = {}

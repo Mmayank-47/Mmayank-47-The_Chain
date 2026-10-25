@@ -1,0 +1,18 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.venv/
+venv/
+*.egg-info/
+build/
+dist/
+.coverage
+htmlcov/
+.DS_Store
+.idea/
+.vscode/
+# stray patch files: changes land as commits, not as *.patch in the tree
+*.patch
+*.orig
+*.rej

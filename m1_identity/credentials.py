@@ -6,11 +6,10 @@ needs only the pinned roots plus the gossiped revocation list to check a credent
 """
 from __future__ import annotations
 
-import hmac
 from dataclasses import dataclass
 from typing import Callable, Dict, FrozenSet, Optional
 
-from .revocation import Revocation, RevocationList, Root, sign_with
+from .revocation import Revocation, RevocationList, Root, sign_with, verify_with
 
 ALIASES: Dict[str, FrozenSet[str]] = {
     "medic": frozenset({"medic", "doctor", "nurse", "paramedic"}),
@@ -64,7 +63,7 @@ class CredentialVerifier:
             return False
         if self.revoked.is_revoked(c.node, c.role):
             return False
-        return hmac.compare_digest(sign_with(root[0], c.body()), c.sig)
+        return verify_with(root[0], c.body(), c.sig)
 
     def claim_check(self, creds: Dict[str, Credential]) -> Callable[[object], Optional[bool]]:
         """For Verifier(credential=...): None = no credential or no skill claimed, True/False = verdict.

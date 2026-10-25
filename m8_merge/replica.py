@@ -4,18 +4,21 @@ from __future__ import annotations
 import time
 from typing import Callable, Dict, List, Optional
 
-from core.types import DispatchState, HLClock
+from core.crypto import Signer
+from core.types import DispatchState, HLClock, MAX_DRIFT_MS
 from .conflict_rules import DispatchBook, Plan, make_did, split_did
-from .event_log import DevSigner, Event, EventStore
+from .event_log import Event, EventStore
 
 
 class Replica:
-    def __init__(self, node_id: str, signer=None, now_ms: Optional[Callable[[], int]] = None,
-                 lease_ms: int = 60_000):
+    def __init__(self, node_id: str, signer: Signer, now_ms: Optional[Callable[[], int]] = None,
+                 lease_ms: int = 60_000, max_drift_ms: Optional[int] = MAX_DRIFT_MS):
+        """signer: normally the shared M1 Registry (see m1_identity.keys.dev_fleet in the sim)."""
         self.id = node_id
         self.now_ms = now_ms or (lambda: int(time.time() * 1000))
-        self.clock = HLClock(node_id, self.now_ms)
-        self.signer = signer or DevSigner()
+        self.clock = HLClock(node_id, self.now_ms, max_drift_ms)
+        self.signer = signer
+        self.rejected_drift = 0                             # events dropped for future-skewed HLCs
         self.store = EventStore(self.signer)
         self.book = DispatchBook(lease_ms)
         self.on_emit: List[Callable[[Event], None]] = []   # M0 bridge hooks in here
@@ -53,10 +56,16 @@ class Replica:
 
     # ---- sync
     def ingest(self, events: List[Event]) -> int:
+        """Merge remote events. An event stamped too far ahead of our physical clock is dropped
+        before it touches the store: lease expiry is computed from HLC wall time, so one future
+        stamp (a heartbeat dated next year) would otherwise keep a dead dispatch alive forever."""
         n = 0
         for ev in events:
+            if not self.clock.drift_ok(ev.hlc):
+                self.rejected_drift += 1
+                continue
             for e in self.store.add(ev):
-                if e.node != self.id:
+                if e.node != self.id and self.clock.drift_ok(e.hlc):
                     self.clock.update(e.hlc)
                 self.book.apply(e)
                 n += 1

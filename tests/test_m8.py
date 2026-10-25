@@ -6,9 +6,13 @@ from core.crdt import LWWMap
 from core.types import HLC, DispatchState as S
 from m0_transport.node import build_sim_node
 from m0_transport.radio_adapter import SimMedium
+from m1_identity.keys import dev_fleet
 from m8_merge import bridge
-from m8_merge.event_log import Event, EventStore, DevSigner
+from m8_merge.event_log import Event, EventStore
 from m8_merge.replica import Replica
+
+# One shared registry: every replica signs with its own enrolled hardware key (no dev signer).
+REG = dev_fleet(["a", "b", "c", "z", "a1", "a2", "b1", "b2"])
 
 
 class Clock:
@@ -19,7 +23,7 @@ class Clock:
 
 
 def rep(name, clk, lease=60_000):
-    return Replica(name, now_ms=clk, lease_ms=lease)
+    return Replica(name, REG, now_ms=clk, lease_ms=lease)
 
 
 class TestCrdt(unittest.TestCase):
@@ -40,13 +44,13 @@ class TestEventLog(unittest.TestCase):
     def test_tamper_and_bad_signature_rejected(self):
         _, evs = self.mk(1)
         bad = dataclasses.replace(evs[0], data={"claim": "evil", "cell": "X", "urgency": 1})
-        self.assertEqual(EventStore().add(bad), [])
+        self.assertEqual(EventStore(REG).add(bad), [])
         forged = dataclasses.replace(evs[0], node="b")
-        self.assertEqual(EventStore().add(forged), [])
+        self.assertEqual(EventStore(REG).add(forged), [])
 
     def test_out_of_order_buffered_then_drained(self):
         _, evs = self.mk(3)
-        s = EventStore()
+        s = EventStore(REG)
         self.assertEqual(s.add(evs[2]), [])
         self.assertEqual(s.add(evs[1]), [])
         self.assertEqual([e.seq for e in s.add(evs[0])], [0, 1, 2])
@@ -55,7 +59,7 @@ class TestEventLog(unittest.TestCase):
         r1, r2 = rep("a", Clock()), rep("a", Clock())      # same identity, two histories
         e1 = r1.open_claim("c1", "X", 0.1)
         e2 = r2.open_claim("c2", "X", 0.9)
-        s = EventStore()
+        s = EventStore(REG)
         s.add(e1); s.add(e2)
         self.assertIn("a", s.forks)
 

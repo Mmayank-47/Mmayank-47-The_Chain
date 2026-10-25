@@ -103,17 +103,25 @@ def sybil_swarm() -> Result:
                   "40 fake identities: vouch ring + same-place claims")
 
 
-def packet_flood() -> Result:
-    lim, dd = RateLimiter(rate=2.0, burst=10.0), Dedupe()
-    n, accepted = 500, 0
+def _flood(lim, dd, n: int = 500) -> int:
+    """Replay the same 50 packets/s x 10 s flood through whatever defenses are given; count accepted."""
+    accepted = 0
     for i in range(n):
-        now = i * 0.02                                              # 50 packets/s for 10 s
+        now = i * 0.02
         payload = f"spam-{i % 5}".encode() if i % 2 else f"spam-{i}".encode()
-        if lim.allow(("device", 66), now) and dd.first(payload, now):   # key = device, rotating ids ignored
-            accepted += 1
-    honest = sum(lim.allow(("device", 1), float(t)) for t in range(30)) / 30
+        if (lim is None or lim.allow(("device", 66), now)) and (dd is None or dd.first(payload, now)):
+            accepted += 1                                           # key = device, rotating ids ignored
+    return accepted
+
+
+def packet_flood() -> Result:
+    n = 500
+    off = _flood(None, None, n) / n                                 # measured: no limiter, no dedupe
+    lim, dd = RateLimiter(rate=2.0, burst=10.0), Dedupe()
+    accepted = _flood(lim, dd, n)
+    honest = sum(lim.allow(("device", 1), float(t)) for t in range(30)) / 30      # flooder must not starve others
     assert honest == 1.0
-    return Result("packet_flood", 1.0, accepted / n, 0.10, f"{accepted}/{n} flood packets got through")
+    return Result("packet_flood", off, accepted / n, 0.10, f"{accepted}/{n} flood packets got through")
 
 
 def lure_into_floodwater() -> Result:
@@ -175,10 +183,15 @@ def hazard_poisoning() -> Result:
     return Result("hazard_poisoning", denied(1.0), denied(0.05), 0.0, "10 fake reporters per cell, weight = trust")
 
 
+def _naive_battery_ok(samples) -> bool:
+    """Undefended baseline: accept any telemetry whose levels are individually in range."""
+    return all(0.0 <= s.level <= 1.0 for s in samples)
+
+
 def battery_curve_fraud() -> Result:
     fake = [dm.Sample(t * 300.0, 1.0) for t in range(20)]           # claims 100 % for hours
     jump = [dm.Sample(0.0, 0.1), dm.Sample(600.0, 0.9)]
-    off = 1.0
+    off = sum(_naive_battery_ok(c) for c in (fake, jump)) / 2       # measured, not assumed
     on = sum(dm.battery_llr(c) >= 0 for c in (fake, jump)) / 2      # share of fraudulent curves accepted
     return Result("battery_curve_fraud", off, on, 0.0, "flat or rising battery curves")
 

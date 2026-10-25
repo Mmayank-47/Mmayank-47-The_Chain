@@ -33,11 +33,18 @@ class SprayPolicy:
         return self.table.get(p)
 
     def clamp(self, p: Priority, incoming: Optional[int]) -> Optional[int]:
-        """Never trust a peer's claimed token count above our own policy."""
+        """Never trust a peer's claimed token count above our own policy.
+
+        Epidemic classes carry no tokens at all, so whatever a peer sent is discarded: a hostile
+        `tok: 0` on a distress message would otherwise park it in the spray 'wait' phase and stop
+        it spreading from this phone. Malformed or non-positive counts on spray classes get the cap.
+        """
         cap = self.tokens_for(p)
         if cap is None:
-            return incoming
-        return cap if incoming is None else min(incoming, cap)
+            return None
+        if isinstance(incoming, bool) or not isinstance(incoming, int) or incoming < 1:
+            return cap
+        return min(incoming, cap)
 
 
 def plan_handoff(c: Carried, peer_cell: Optional[str]) -> Tuple[bool, Optional[int], Optional[int]]:

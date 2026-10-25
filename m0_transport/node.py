@@ -8,6 +8,7 @@ from typing import Callable, Dict, Optional
 from core.bloom import BloomFilter
 from core.types import Message
 from .gossip import GossipEngine, NeighborInfo
+from .ingress import IngressGuard
 from .radio_adapter import Radio, SimMedium, SimRadio
 
 
@@ -15,8 +16,11 @@ class MeshNode:
     def __init__(self, node_id: str, radio: Radio, engine: GossipEngine, *,
                  hello_interval: float = 2.0, neighbor_timeout: float = 6.0,
                  get_cell: Callable[[], Optional[str]] = lambda: None,
-                 get_battery: Callable[[], float] = lambda: 1.0):
-        self.id, self.radio, self.engine = node_id, radio, engine
+                 get_battery: Callable[[], float] = lambda: 1.0,
+                 guard: Optional[IngressGuard] = None):
+        """guard: ingress filter for everything off the air (see ingress.py). None = trust the wire,
+        which is only for unit tests of the gossip logic itself."""
+        self.id, self.radio, self.engine, self.guard = node_id, radio, engine, guard
         self.hello_interval, self.neighbor_timeout = hello_interval, neighbor_timeout
         self.get_cell, self.get_battery = get_cell, get_battery
         self.neighbors: Dict[str, NeighborInfo] = {}
@@ -41,15 +45,32 @@ class MeshNode:
             self.radio.send(tx.to, json.dumps(frame).encode(), now)
 
     def _handle(self, frm: str, data: bytes, now: float):
+        g = self.guard
+        if g is not None and not g.frame_ok(data):
+            return
         try:
             f = json.loads(data)
             if f["t"] == "hello":
-                self.neighbors[frm] = NeighborInfo(frm, BloomFilter.from_json(f["bf"]),
-                                                   f.get("cell"), float(f.get("bat", 1.0)), now)
+                if g is not None:
+                    h = g.hello(f, len(data))
+                    if h is None:
+                        return
+                    self.neighbors[frm] = NeighborInfo(frm, h[0], h[1], h[2], now)
+                else:
+                    self.neighbors[frm] = NeighborInfo(frm, BloomFilter.from_json(f["bf"]),
+                                                       f.get("cell"), float(f.get("bat", 1.0)), now)
             elif f["t"] == "data":
                 if frm in self.neighbors:
                     self.neighbors[frm].last_seen = now
-                self.engine.receive(Message.from_wire(f["m"]), f.get("tok"), now, frm)
+                msg = Message.from_wire(f["m"])
+                if g is not None:
+                    if len(data) > g.limits.max_frame_bytes:
+                        g.dropped["frame_size"] += 1
+                        return
+                    msg = g.admit(msg, frm, now)
+                    if msg is None:
+                        return
+                self.engine.receive(msg, f.get("tok"), now, frm)
         except (ValueError, KeyError, TypeError):
             pass    # malformed frame from a hostile peer: drop silently
 
