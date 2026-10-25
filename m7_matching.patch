@@ -1,0 +1,628 @@
+diff --git a/m7_matching/__init__.py b/m7_matching/__init__.py
+new file mode 100644
+index 0000000..0eceecc
+--- /dev/null
++++ b/m7_matching/__init__.py
+@@ -0,0 +1 @@
++"""M7: distributed matching, triage and opportunity cost (CBBA-style auction, escalation timers)."""
+diff --git a/m7_matching/cbba.py b/m7_matching/cbba.py
+new file mode 100644
+index 0000000..632b5e1
+--- /dev/null
++++ b/m7_matching/cbba.py
+@@ -0,0 +1,110 @@
++"""CBBA-style decentralised auction, bundle size 1 (a responder works one case at a time).
++
++Each phone holds a table {agent: Entry(epoch, task, bid)}. Merge keeps, per agent, the entry with
++the higher epoch (only an agent writes its own entry), so tables converge in any gossip order and
++survive partitions. A task's owner is the highest bid (ties: lower agent id). An agent bids only
++on tasks it would win, and drops its task only when outbid, so it never returns to a task it lost
++and the auction terminates for fixed utilities. Islands converge independently; when they merge,
++duplicate claims on a task resolve by the same rule and the loser re-bids elsewhere.
++"""
++from __future__ import annotations
++
++import math
++from dataclasses import dataclass
++from typing import Dict, Iterable, List, Optional, Tuple
++
++
++@dataclass(frozen=True)
++class Entry:
++    epoch: int
++    task: Optional[str]
++    bid: float
++
++
++def _beats(bid: float, who: str, obid: float, owho: str) -> bool:
++    return bid > obid + 1e-12 or (abs(bid - obid) <= 1e-12 and who < owho)
++
++
++class Bidder:
++    def __init__(self, agent_id: str, utilities: Dict[str, float]):
++        self.id = agent_id
++        self.u = dict(utilities)
++        self.table: Dict[str, Entry] = {agent_id: Entry(0, None, 0.0)}
++
++    def set_utilities(self, u: Dict[str, float]):
++        self.u = dict(u)
++
++    def forget(self, agent: str):
++        """M8 lease expired / agent gone: free whatever it was holding."""
++        if agent != self.id:
++            self.table.pop(agent, None)
++
++    def _best_other(self, task: str) -> Optional[Tuple[float, str]]:
++        best = None
++        for a, e in self.table.items():
++            if a != self.id and e.task == task and (best is None or _beats(e.bid, a, best[0], best[1])):
++                best = (e.bid, a)
++        return best
++
++    def merge(self, table: Dict[str, Entry]) -> bool:
++        changed = False
++        for a, e in table.items():
++            if a == self.id:
++                continue
++            cur = self.table.get(a)
++            if cur is None or e.epoch > cur.epoch:
++                self.table[a] = e
++                changed = True
++        return changed
++
++    def step(self) -> bool:
++        own = self.table[self.id]
++        if own.task is not None:
++            bid, other = self.u.get(own.task, -math.inf), self._best_other(own.task)
++            if bid > 0 and (other is None or _beats(bid, self.id, other[0], other[1])):
++                if abs(bid - own.bid) > 1e-12:
++                    self.table[self.id] = Entry(own.epoch + 1, own.task, bid)
++                    return True
++                return False
++        best: Optional[Tuple[float, str]] = None
++        for t, bid in self.u.items():
++            if bid <= 0:
++                continue
++            other = self._best_other(t)
++            if other is not None and not _beats(bid, self.id, other[0], other[1]):
++                continue
++            if best is None or bid > best[0] + 1e-12 or (abs(bid - best[0]) <= 1e-12 and t < best[1]):
++                best = (bid, t)
++        target = Entry(own.epoch + 1, best[1], best[0]) if best else Entry(own.epoch + 1, None, 0.0)
++        if (target.task, target.bid) == (own.task, own.bid):
++            return False
++        self.table[self.id] = target
++        return True
++
++    def assignment(self) -> Dict[str, str]:
++        """task -> owning agent, as far as this phone knows."""
++        own: Dict[str, Tuple[float, str]] = {}
++        for a, e in self.table.items():
++            if e.task is not None and (e.task not in own or _beats(e.bid, a, own[e.task][0], own[e.task][1])):
++                own[e.task] = (e.bid, a)
++        return {t: a for t, (_, a) in own.items()}
++
++    def my_task(self) -> Optional[str]:
++        t = self.table[self.id].task
++        return t if t is not None and self.assignment().get(t) == self.id else None
++
++
++def gossip(bidders: Dict[str, Bidder], links: Iterable[Tuple[str, str]], max_rounds: int = 100) -> int:
++    """Synchronous rounds over the given links until nothing changes. Returns rounds used."""
++    links = list(links)
++    for rnd in range(1, max_rounds + 1):
++        changed = False
++        snap = {i: dict(b.table) for i, b in bidders.items()}
++        for a, b in links:
++            changed |= bidders[a].merge(snap[b])
++            changed |= bidders[b].merge(snap[a])
++        for b in bidders.values():
++            changed |= b.step()
++        if not changed:
++            return rnd
++    raise RuntimeError("auction did not converge")
+diff --git a/m7_matching/escalation.py b/m7_matching/escalation.py
+new file mode 100644
+index 0000000..151d5bd
+--- /dev/null
++++ b/m7_matching/escalation.py
+@@ -0,0 +1,53 @@
++"""Bystander-effect fix: one deterministic primary, then automatic escalation.
++
++Everyone computes the same ranking, so exactly one phone is prompted first. No ack within the
++timeout, or a decline, moves to the next responder. "Can't, but I know X" puts X next.
++"""
++from __future__ import annotations
++
++from typing import List, Optional
++
++PROMPTED, ACCEPTED, EXHAUSTED = "prompted", "accepted", "exhausted"
++
++
++class Escalation:
++    def __init__(self, claim_id: str, ranked: List[str], now: float, ack_timeout: float = 120.0):
++        self.claim_id, self.ranked, self.timeout = claim_id, list(ranked), ack_timeout
++        self.i, self.t_prompt = 0, now
++        self.state = PROMPTED if self.ranked else EXHAUSTED
++
++    @property
++    def current(self) -> Optional[str]:
++        return self.ranked[self.i] if self.state in (PROMPTED, ACCEPTED) else None
++
++    def _advance(self, now: float) -> Optional[str]:
++        self.i += 1
++        if self.i >= len(self.ranked):
++            self.state = EXHAUSTED          # caller re-opens the claim (M8 lease rules)
++            return None
++        self.t_prompt = now
++        return self.ranked[self.i]
++
++    def ack(self, responder: str, now: float) -> bool:
++        if self.state == PROMPTED and responder == self.current:
++            self.state = ACCEPTED
++            return True
++        return False
++
++    def decline(self, responder: str, now: float) -> Optional[str]:
++        if self.state == PROMPTED and responder == self.current:
++            return self._advance(now)
++        return self.current if self.state == PROMPTED else None
++
++    def refer(self, responder: str, to: str, now: float) -> Optional[str]:
++        if self.state == PROMPTED and responder == self.current:
++            self.ranked = [r for k, r in enumerate(self.ranked) if k <= self.i or r != to]
++            self.ranked.insert(self.i + 1, to)
++            return self._advance(now)
++        return self.current if self.state == PROMPTED else None
++
++    def tick(self, now: float) -> Optional[str]:
++        """Returns the responder newly prompted because of a timeout, else None."""
++        if self.state == PROMPTED and now - self.t_prompt >= self.timeout:
++            return self._advance(now)
++        return None
+diff --git a/m7_matching/matcher.py b/m7_matching/matcher.py
+new file mode 100644
+index 0000000..194b497
+--- /dev/null
++++ b/m7_matching/matcher.py
+@@ -0,0 +1,43 @@
++"""Glue: M3/M4/M5/M6 outputs -> per-responder utilities for the auction, plus gate decisions."""
++from __future__ import annotations
++
++from typing import Callable, Dict, Iterable, Optional, Tuple
++
++from .opportunity_cost import opp_cost, prices
++from .utility import Claim, Responder, gate, pair_utility
++
++RouteFn = Callable[[Responder, Claim], Optional[Tuple[float, float]]]   # -> (length_m, p_safe) | None
++ReachFn = Callable[[Responder, float], float]                           # (responder, route_len) -> p_reach
++
++
++def build_utilities(claims: Iterable[Claim], responders: Iterable[Responder], route_fn: RouteFn,
++                    reach_fn: ReachFn, assigned: frozenset = frozenset(), extra_demand=None,
++                    **kw):
++    """-> (utilities {responder: {claim: U > 0}}, decisions {(responder, claim): gate result})."""
++    cs = [c for c in claims if c.id not in assigned]
++    rs = list(responders)
++    price = prices(rs, cs, assigned, extra_demand)
++    util: Dict[str, Dict[str, float]] = {r.id: {} for r in rs}
++    decisions: Dict[Tuple[str, str], str] = {}
++    for r in rs:
++        for c in cs:
++            if c.need and c.need not in r.skills:
++                continue
++            route = route_fn(r, c)
++            if route is None:
++                decisions[(r.id, c.id)] = "no_route"
++                continue
++            length, p_safe = route
++            p_reach = reach_fn(r, length)
++            d = decisions[(r.id, c.id)] = gate(c.p_valid, p_safe, c.trust, p_reach)
++            if d != "dispatch":
++                continue
++            u = pair_utility(c, r, length, p_safe, p_reach, opp_cost(r, c, price), **kw)
++            if u > 0:
++                util[r.id][c.id] = u
++    return util, decisions
++
++
++def ranking(utilities: Dict[str, Dict[str, float]], claim_id: str):
++    """Deterministic responder order for one claim (same on every phone given the same inputs)."""
++    return [r for _, r in sorted((-u[claim_id], r) for r, u in utilities.items() if claim_id in u)]
+diff --git a/m7_matching/opportunity_cost.py b/m7_matching/opportunity_cost.py
+new file mode 100644
+index 0000000..bdd2543
+--- /dev/null
++++ b/m7_matching/opportunity_cost.py
+@@ -0,0 +1,36 @@
++"""Shadow price on scarce skills: a medic's time is worth more when critical cases are likely.
++
++price(skill) = value * min(1, expected_demand / idle_supply). Using a skill the claim actually
++needs is free; using it on a claim that does not need it costs the price. This is how "the only
++medic is not sent to a minor emergency" falls out of the maths instead of a hard rule.
++"""
++from __future__ import annotations
++
++from typing import Dict, Iterable, Mapping, Optional
++
++from .utility import Claim, Responder
++
++CRITICAL = 0.7
++
++
++def expected_demand(claims: Iterable[Claim], skill: str, assigned: frozenset = frozenset(),
++                    critical: float = CRITICAL) -> float:
++    """Unassigned, plausible, critical claims needing `skill`, weighted by p_valid."""
++    return sum(c.p_valid for c in claims
++               if c.need == skill and c.urgency >= critical and c.id not in assigned)
++
++
++def prices(responders: Iterable[Responder], claims: Iterable[Claim], assigned: frozenset = frozenset(),
++           extra_demand: Optional[Mapping[str, float]] = None, value: float = 0.6) -> Dict[str, float]:
++    """extra_demand: expected arrivals not yet seen (unverified reports, base rate)."""
++    claims, rs = list(claims), list(responders)
++    out = {}
++    for s in {s for r in rs for s in r.skills}:
++        supply = sum(1 for r in rs if s in r.skills)
++        d = expected_demand(claims, s, assigned) + (extra_demand or {}).get(s, 0.0)
++        out[s] = value * min(1.0, d / supply)
++    return out
++
++
++def opp_cost(r: Responder, c: Claim, price: Mapping[str, float]) -> float:
++    return sum(price.get(s, 0.0) for s in r.skills if s != c.need)
+diff --git a/m7_matching/triage.py b/m7_matching/triage.py
+new file mode 100644
+index 0000000..14145aa
+--- /dev/null
++++ b/m7_matching/triage.py
+@@ -0,0 +1,57 @@
++"""START-style triage from features M2 extracts. Unknown features are None, never guessed.
++
++Category -> (urgency, survival_gain). EXPECTANT is deprioritised, not forgotten: it keeps a small
++positive urgency so it is still served when responders are free. A human makes the final call (M10).
++"""
++from __future__ import annotations
++
++from dataclasses import dataclass
++from enum import Enum
++from typing import Optional
++
++
++class Category(Enum):
++    IMMEDIATE = "immediate"
++    DELAYED = "delayed"
++    MINOR = "minor"
++    EXPECTANT = "expectant"
++    UNKNOWN = "unknown"
++
++
++SCORES = {
++    Category.IMMEDIATE: (1.0, 0.8),
++    Category.DELAYED: (0.5, 0.5),
++    Category.MINOR: (0.15, 0.2),
++    Category.EXPECTANT: (0.3, 0.05),
++    Category.UNKNOWN: (0.5, 0.5),       # cautious middle: not minor, not assumed critical
++}
++
++
++@dataclass(frozen=True)
++class Features:
++    can_walk: Optional[bool] = None
++    breathing: Optional[bool] = None
++    resp_rate: Optional[float] = None          # breaths/min
++    perfusion_ok: Optional[bool] = None        # radial pulse / cap refill < 2 s
++    obeys_commands: Optional[bool] = None
++
++
++def classify(f: Features) -> Category:
++    if f.can_walk:
++        return Category.MINOR
++    if f.breathing is False:
++        return Category.EXPECTANT
++    if f.resp_rate is not None and f.resp_rate > 30:
++        return Category.IMMEDIATE
++    if f.perfusion_ok is False or f.obeys_commands is False:
++        return Category.IMMEDIATE
++    known = [f.can_walk, f.breathing, f.resp_rate, f.perfusion_ok, f.obeys_commands]
++    if sum(x is not None for x in known) < 3:
++        return Category.UNKNOWN
++    return Category.DELAYED
++
++
++def scores(f: Features):
++    """-> (category, urgency, survival_gain)"""
++    c = classify(f)
++    return (c, *SCORES[c])
+diff --git a/m7_matching/utility.py b/m7_matching/utility.py
+new file mode 100644
+index 0000000..fde0f63
+--- /dev/null
++++ b/m7_matching/utility.py
+@@ -0,0 +1,61 @@
++"""Pair utility and the dispatch gate.
++
++U = p_valid * urgency * survival_gain * p_reach - route_risk - travel_cost - opportunity_cost
++Ineligible pairs (responder lacks the needed skill) get -inf. Constants are uncalibrated
++placeholders; the M12 harness is where they get tuned.
++"""
++from __future__ import annotations
++
++import math
++from dataclasses import dataclass, field
++from typing import FrozenSet, Optional, Tuple
++
++Pos = Tuple[float, float]
++
++
++@dataclass(frozen=True)
++class Claim:
++    id: str
++    pos: Pos
++    p_valid: float                 # M3
++    urgency: float                 # M7 triage x M6 battery urgency
++    survival_gain: float
++    need: Optional[str] = None     # required skill, None = anyone
++    trust: float = 0.5             # M5 trust in the claimant (0.5 = stranger)
++
++
++@dataclass(frozen=True)
++class Responder:
++    id: str
++    pos: Pos
++    skills: FrozenSet[str] = field(default_factory=frozenset)
++    battery: float = 1.0
++
++
++def pair_utility(c: Claim, r: Responder, route_len: float, p_safe: float, p_reach: float,
++                 opp_cost: float, *, loss_value: float = 1.0, speed: float = 1.5,
++                 horizon: float = 3600.0, time_weight: float = 0.3) -> float:
++    if c.need and c.need not in r.skills:
++        return -math.inf
++    benefit = c.p_valid * c.urgency * c.survival_gain * p_reach
++    risk = (1 - p_safe) * loss_value
++    travel = time_weight * min(1.0, route_len / speed / horizon)
++    return benefit - risk - travel - opp_cost
++
++
++def gate(p_valid: float, p_route_safe: float, trust: float, p_reach: float,
++         base: float = 0.2, slope: float = 0.5, min_valid: float = 0.5) -> str:
++    """Chain decision: P = p_valid * p_route_safe * trust * p_reach must clear a threshold that
++    rises with danger to the responder. Below it: probe the claim, scout the route, or hold.
++    A floor on p_valid stops a trusted claimant from carrying a shaky claim through the product."""
++    if p_valid < min_valid:
++        return "probe"
++    p = p_valid * p_route_safe * trust * p_reach
++    thr = min(0.95, base + slope * (1 - p_route_safe))
++    if p >= thr:
++        return "dispatch"
++    if p_valid < 0.6 or trust < 0.4:
++        return "probe"          # verification challenge (M3) before anyone moves
++    if p_route_safe < 0.7:
++        return "scout"          # send someone to look at the route first
++    return "hold"
+diff --git a/tests/test_m7.py b/tests/test_m7.py
+new file mode 100644
+index 0000000..2645663
+--- /dev/null
++++ b/tests/test_m7.py
+@@ -0,0 +1,219 @@
++import itertools
++import math
++import random
++import unittest
++
++from m7_matching import escalation as esc
++from m7_matching.cbba import Bidder, gossip
++from m7_matching.matcher import build_utilities, ranking
++from m7_matching.opportunity_cost import opp_cost, prices
++from m7_matching.triage import Category, Features, classify, scores
++from m7_matching.utility import Claim, Responder, gate, pair_utility
++
++MEDIC = frozenset({"medic"})
++
++
++def claim(id, urgency=0.5, need=None, p=0.9, gain=0.5, pos=(0.0, 0.0), trust=0.8):
++    return Claim(id, pos, p, urgency, gain, need, trust)
++
++
++def resp(id, skills=frozenset(), pos=(0.0, 0.0)):
++    return Responder(id, pos, skills)
++
++
++def straight(r, c):
++    return math.dist(r.pos, c.pos), 0.95
++
++
++def reach(r, length):
++    return 0.97
++
++
++class TestTriage(unittest.TestCase):
++    def test_start_rules(self):
++        self.assertEqual(classify(Features(can_walk=True)), Category.MINOR)
++        self.assertEqual(classify(Features(can_walk=False, breathing=False)), Category.EXPECTANT)
++        self.assertEqual(classify(Features(can_walk=False, breathing=True, resp_rate=34)), Category.IMMEDIATE)
++        self.assertEqual(classify(Features(can_walk=False, breathing=True, resp_rate=20, perfusion_ok=False)),
++                         Category.IMMEDIATE)
++        self.assertEqual(classify(Features(False, True, 20, True, True)), Category.DELAYED)
++        self.assertEqual(classify(Features(False, None, None, None, None)), Category.UNKNOWN)
++
++    def test_expectant_deprioritised_not_zero(self):
++        _, u, g = scores(Features(can_walk=False, breathing=False))
++        self.assertGreater(u, 0)
++        self.assertLess(g, 0.1)
++
++
++class TestUtilityAndGate(unittest.TestCase):
++    def test_skill_gate_and_monotonicity(self):
++        c = claim("c", 1.0, need="medic")
++        self.assertEqual(pair_utility(c, resp("a"), 100, 0.95, 0.97, 0.0), -math.inf)
++        near = pair_utility(c, resp("m", MEDIC), 100, 0.95, 0.97, 0.0)
++        far = pair_utility(c, resp("m", MEDIC), 3000, 0.95, 0.97, 0.0)
++        risky = pair_utility(c, resp("m", MEDIC), 100, 0.5, 0.97, 0.0)
++        self.assertGreater(near, far)
++        self.assertGreater(near, risky)
++
++    def test_gate_threshold_rises_with_danger(self):
++        self.assertEqual(gate(0.9, 0.95, 0.8, 0.97), "dispatch")
++        self.assertEqual(gate(0.9, 0.95, 0.5, 0.97), "dispatch")        # stranger, plausible claim
++        self.assertEqual(gate(0.9, 0.35, 0.6, 0.97), "scout")           # dangerous route
++        self.assertEqual(gate(0.4, 0.95, 0.8, 0.97), "probe")           # shaky claim
++        self.assertEqual(gate(0.3, 0.9, 0.2, 0.97), "probe")
++        self.assertEqual(gate(0.65, 0.95, 0.45, 0.4), "hold")           # low charge, nothing wrong with claim
++
++
++class TestOpportunityCost(unittest.TestCase):
++    def test_medic_price_depends_on_scarcity(self):
++        crit = claim("k", 1.0, need="medic", p=0.8)
++        one = prices([resp("m", MEDIC)], [crit])["medic"]
++        many = prices([resp(f"m{i}", MEDIC) for i in range(5)], [crit])["medic"]
++        self.assertGreater(one, many)
++        self.assertEqual(prices([resp("m", MEDIC)], [])["medic"], 0.0)
++
++    def test_using_the_needed_skill_is_free(self):
++        m, crit, minor = resp("m", MEDIC), claim("k", 1.0, need="medic"), claim("n", 0.15)
++        pr = {"medic": 0.5}
++        self.assertEqual(opp_cost(m, crit, pr), 0.0)
++        self.assertEqual(opp_cost(m, minor, pr), 0.5)
++        self.assertEqual(opp_cost(resp("a"), minor, pr), 0.0)
++
++    def test_only_medic_not_sent_to_minor_case(self):
++        minor = claim("minor", urgency=0.15, gain=0.2)
++        rs = [resp("medic", MEDIC), resp("walker")]
++        # a critical case is plausible but still unverified: expected arrivals keep the medic's price up
++        safe = lambda r, c: (math.dist(r.pos, c.pos), 0.999)             # minor cases tolerate almost no risk
++        util, _ = build_utilities([minor], rs, safe, reach, extra_demand={"medic": 0.7})
++        self.assertNotIn("minor", util["medic"])
++        self.assertIn("minor", util["walker"])
++        # with nothing else expected, the medic is free to help
++        util2, _ = build_utilities([minor], rs, safe, reach)
++        self.assertIn("minor", util2["medic"])
++
++
++class TestMatcher(unittest.TestCase):
++    def test_decisions_recorded_and_unroutable_skipped(self):
++        c = claim("c", 1.0)
++        util, dec = build_utilities([c], [resp("a")], lambda r, c: None, reach)
++        self.assertEqual(dec[("a", "c")], "no_route")
++        self.assertEqual(util["a"], {})
++
++    def test_gate_blocks_unverified_claim(self):
++        c = claim("c", 1.0, p=0.2)
++        util, dec = build_utilities([c], [resp("a")], straight, reach)
++        self.assertEqual(dec[("a", "c")], "probe")
++        self.assertEqual(util["a"], {})
++
++    def test_ranking_deterministic_and_nearest_first(self):
++        c = claim("c", 1.0)
++        rs = [resp("far", pos=(900.0, 0.0)), resp("near", pos=(50.0, 0.0)), resp("mid", pos=(300.0, 0.0))]
++        util, _ = build_utilities([c], rs, straight, reach)
++        self.assertEqual(ranking(util, "c"), ["near", "mid", "far"])
++
++
++class TestCBBA(unittest.TestCase):
++    def fleet(self, util):
++        return {a: Bidder(a, u) for a, u in util.items()}
++
++    def check_conflict_free(self, bs):
++        views = [b.assignment() for b in bs.values()]
++        self.assertTrue(all(v == views[0] for v in views), views)
++        mine = [b.my_task() for b in bs.values() if b.my_task()]
++        self.assertEqual(len(mine), len(set(mine)))
++
++    def test_conflict_free_and_agreed_in_connected_group(self):
++        util = {"a": {"x": 0.9, "y": 0.5}, "b": {"x": 0.8, "y": 0.6}, "c": {"x": 0.4, "y": 0.3}}
++        bs = self.fleet(util)
++        gossip(bs, [("a", "b"), ("b", "c")])
++        self.check_conflict_free(bs)
++        self.assertEqual(bs["a"].assignment(), {"x": "a", "y": "b"})
++
++    def test_agents_with_no_positive_utility_stay_idle(self):
++        bs = self.fleet({"a": {"x": 0.5}, "b": {}})
++        gossip(bs, [("a", "b")])
++        self.assertIsNone(bs["b"].my_task())
++
++    def test_tie_broken_by_agent_id(self):
++        bs = self.fleet({"b": {"x": 0.5}, "a": {"x": 0.5}})
++        gossip(bs, [("a", "b")])
++        self.assertEqual(bs["b"].assignment(), {"x": "a"})
++
++    def test_random_instances_converge_conflict_free(self):
++        rng = random.Random(7)
++        for _ in range(40):
++            n, m = rng.randint(2, 8), rng.randint(1, 8)
++            util = {f"r{i}": {f"t{j}": rng.uniform(-0.2, 1) for j in range(m)} for i in range(n)}
++            bs = self.fleet(util)
++            ids = list(bs)
++            links = [(a, b) for a, b in itertools.combinations(ids, 2) if rng.random() < 0.6]
++            links += [(ids[i], ids[i + 1]) for i in range(n - 1)]          # keep it connected
++            gossip(bs, links)
++            self.check_conflict_free(bs)
++            view = bs[ids[0]].assignment()
++            for a, u in util.items():                                        # stable: no idle agent could win a task
++                if bs[a].my_task() is None:
++                    for t, v in u.items():
++                        if v > 0:
++                            self.assertIn(t, view)
++                            self.assertGreater(bs[view[t]].u[t] + 1e-9, v)
++
++    def test_partition_then_merge_resolves_duplicate_claims(self):
++        util = {"a1": {"x": 0.7, "y": 0.2}, "a2": {"x": 0.3}, "b1": {"x": 0.9, "y": 0.4}, "b2": {"x": 0.1}}
++        bs = self.fleet(util)
++        gossip(bs, [("a1", "a2"), ("b1", "b2")])                             # islands
++        self.assertEqual(bs["a1"].my_task(), "x")
++        self.assertEqual(bs["b1"].my_task(), "x")                            # both took x: double dispatch
++        gossip(bs, [("a1", "a2"), ("b1", "b2"), ("a2", "b1")])               # heal
++        self.check_conflict_free(bs)
++        self.assertEqual(bs["a1"].assignment()["x"], "b1")                   # higher bid keeps it
++        self.assertEqual(bs["a1"].my_task(), "y")                            # loser re-bids elsewhere
++
++    def test_forget_frees_task_of_vanished_agent(self):
++        bs = self.fleet({"a": {"x": 0.9}, "b": {"x": 0.5}})
++        gossip(bs, [("a", "b")])
++        self.assertEqual(bs["b"].my_task(), None)
++        bs["b"].forget("a")
++        gossip(bs, [])
++        self.assertEqual(bs["b"].my_task(), "x")
++
++    def test_utility_change_triggers_rebid(self):
++        bs = self.fleet({"a": {"x": 0.9, "y": 0.8}, "b": {"x": 0.5, "y": 0.4}})
++        gossip(bs, [("a", "b")])
++        bs["a"].set_utilities({"x": -1.0, "y": 0.8})                        # route to x flooded
++        gossip(bs, [("a", "b")])
++        self.assertEqual(bs["a"].assignment(), {"y": "a", "x": "b"})
++
++
++class TestEscalation(unittest.TestCase):
++    def test_timeout_escalates_then_exhausts(self):
++        e = esc.Escalation("c", ["a", "b"], now=0.0, ack_timeout=100.0)
++        self.assertEqual(e.current, "a")
++        self.assertIsNone(e.tick(99.0))
++        self.assertEqual(e.tick(100.0), "b")
++        self.assertIsNone(e.tick(250.0))
++        self.assertEqual(e.state, esc.EXHAUSTED)
++        self.assertIsNone(e.current)
++
++    def test_ack_stops_escalation(self):
++        e = esc.Escalation("c", ["a", "b"], 0.0)
++        self.assertTrue(e.ack("a", 10.0))
++        self.assertIsNone(e.tick(10_000.0))
++        self.assertEqual(e.current, "a")
++
++    def test_decline_and_wrong_responder(self):
++        e = esc.Escalation("c", ["a", "b", "c"], 0.0)
++        self.assertEqual(e.decline("b", 5.0), "a")        # not the prompted one: ignored
++        self.assertEqual(e.decline("a", 5.0), "b")
++
++    def test_referral_goes_next_and_dedupes(self):
++        e = esc.Escalation("c", ["a", "b", "z"], 0.0)
++        self.assertEqual(e.refer("a", "z", 5.0), "z")
++        self.assertEqual(e.ranked, ["a", "z", "b"])
++
++    def test_empty_ranking_is_exhausted(self):
++        self.assertEqual(esc.Escalation("c", [], 0.0).state, esc.EXHAUSTED)
++
++
++if __name__ == "__main__":
++    unittest.main()
