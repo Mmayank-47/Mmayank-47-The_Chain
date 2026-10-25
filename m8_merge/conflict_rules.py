@@ -13,6 +13,7 @@ from typing import Dict, List, Optional
 from core.crdt import LWWMap
 from core.types import HLC, DispatchState
 from .event_log import Event
+from .leases import alive_ms, expired, is_live
 
 _INF = HLC(2 ** 62, 0, "")
 
@@ -36,7 +37,7 @@ class Rec:
     beat_ms: int = 0
 
     def alive_ms(self) -> int:
-        return max(self.created.wall if self.created else 0, self.beat_ms)
+        return alive_ms(self.created.wall if self.created else 0, self.beat_ms)
 
 
 @dataclass
@@ -80,7 +81,7 @@ class DispatchBook:
         for claim, rs in by_claim.items():
             if any(r.state == DispatchState.RESOLVED for r in rs):
                 continue
-            live = [r for r in rs if now_ms - r.alive_ms() <= self.lease_ms]
+            live = [r for r in rs if is_live(r.alive_ms(), now_ms, self.lease_ms)]
             if not live:
                 p.reopen.append(claim)
                 continue
@@ -88,3 +89,7 @@ class DispatchBook:
             p.winners[claim] = win.did
             p.redirect += [r.did for r in live if r is not win and r.state < DispatchState.ARRIVED]
         return p
+
+    def expired_dispatches(self, now_ms: int) -> List[Rec]:
+        """Orphans: lease run out and not RESOLVED. M7 calls Bidder.forget(rec.responder) for these."""
+        return expired(self.recs.values(), now_ms, self.lease_ms)

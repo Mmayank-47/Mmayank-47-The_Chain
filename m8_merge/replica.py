@@ -22,6 +22,8 @@ class Replica:
         self.store = EventStore(self.signer)
         self.book = DispatchBook(lease_ms)
         self.on_emit: List[Callable[[Event], None]] = []   # M0 bridge hooks in here
+        self.on_apply: List[Callable[[Event], None]] = []  # every newly appended event, local or remote
+                                                           # (m8_merge.kinds.Projector hooks in here)
 
     # ---- local actions
     def _emit(self, kind: str, data: dict) -> Event:
@@ -29,10 +31,19 @@ class Replica:
         ev = Event.make(self.id, len(log), log[-1].hash if log else "", self.clock.now(),
                         kind, data, self.signer)
         for e in self.store.add(ev):
-            self.book.apply(e)
+            self._applied(e)
         for cb in self.on_emit:
             cb(ev)
         return ev
+
+    def _applied(self, e: Event):
+        self.book.apply(e)
+        for cb in self.on_apply:
+            cb(e)
+
+    def emit(self, kind: str, data: dict) -> Event:
+        """Append a signed event of any kind (see m8_merge.kinds for the builders)."""
+        return self._emit(kind, data)
 
     def open_claim(self, claim: str, cell: str, urgency: float) -> Event:
         return self._emit("claim", {"claim": claim, "cell": cell, "urgency": urgency})
@@ -67,7 +78,7 @@ class Replica:
             for e in self.store.add(ev):
                 if e.node != self.id and self.clock.drift_ok(e.hlc):
                     self.clock.update(e.hlc)
-                self.book.apply(e)
+                self._applied(e)
                 n += 1
         return n
 
