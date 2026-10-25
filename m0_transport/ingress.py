@@ -14,6 +14,9 @@ What it enforces (all before the gossip engine or any higher layer sees the mess
   * Optional per-sender budget via any object with allow(node, now, cost) -> bool
     (m1_identity.ratelimit.IdentityLimiter in production). The sender is the radio neighbour, the
     only identity M0 can attribute a frame to; claimed `origin` is not trusted.
+  * Anti-entropy frames (`ae.sum`, `ae.ev`) are the only frame types besides hello / data that
+    cross the guard: ae_frame() checks type, size, container shape and the sender budget.
+  * Hazards and vouches have no message kind of their own: they are M8 events riding m8.event.
 
 Drops are counted per reason in `guard.dropped` (feeds the D5 metrics).
 """
@@ -25,10 +28,11 @@ from dataclasses import dataclass
 from typing import Any, Callable, Dict, Optional, Protocol, Tuple
 
 from core.bloom import BloomFilter
-from core.types import Message, Priority
+from core.types import Message, Priority, event_priority
 
 # Allowlist: kind -> priority. None = derived from the payload (see _m8_priority).
 # Kinds are string literals on purpose: M0 must not import the layers above it.
+# Hazards and vouches are NOT here: they are M8 events (kinds hazard / vouch) and ride m8.event.
 KIND_PRIORITY: Dict[str, Optional[Priority]] = {
     "m8.event": None,
     "m9.case": Priority.DISTRESS,
@@ -36,14 +40,17 @@ KIND_PRIORITY: Dict[str, Optional[Priority]] = {
     "m1.revoke": Priority.DISPATCH,
     "m3.challenge": Priority.DISPATCH,
     "m3.response": Priority.DISPATCH,
-    "m4.hazard": Priority.HAZARD,
-    "m5.vouch": Priority.CHATTER,
 }
+
+# Frame types besides hello / data that may cross the guard (anti-entropy, M8). Literals for the
+# same reason as above; tests/test_hygiene.py pins them to what m8_merge.anti_entropy really sends.
+AE_SUM, AE_EVENTS = "ae.sum", "ae.ev"
+AE_FRAMES = frozenset({AE_SUM, AE_EVENTS})
 
 
 def _m8_priority(payload: dict) -> Priority:
-    """Mirror of m8_merge.bridge.to_message: new claims are distress, everything else dispatch."""
-    return Priority.DISTRESS if payload.get("k") == "claim" else Priority.DISPATCH
+    """Same rule as m8_merge.bridge.to_message: both call core.types.event_priority."""
+    return event_priority(payload.get("k"))
 
 
 class Limiter(Protocol):
@@ -61,6 +68,9 @@ class IngressLimits:
     min_bloom_bits: int = 64
     max_origin_len: int = 64
     max_cell_len: int = 32
+    max_ae_bytes: int = 16384           # one anti-entropy frame (a 32-event batch is ~10 KB of JSON)
+    max_ae_nodes: int = 512             # ae.sum version-vector entries (AntiEntropy.max_nodes)
+    max_ae_events: int = 64             # ae.ev events per frame (AntiEntropy.batch defaults to 32)
 
 
 class IngressGuard:
@@ -77,12 +87,13 @@ class IngressGuard:
 
     # ---- raw frames -------------------------------------------------------------------------
     def frame_ok(self, data: Any) -> bool:
-        """Cheap pre-parse check. Data frames and hellos have different ceilings; the larger applies
-        here and the precise ones are enforced after parsing."""
+        """Cheap pre-parse check. Data frames, hellos and anti-entropy frames have different
+        ceilings; the largest applies here and the precise ones are enforced after parsing."""
         if not isinstance(data, (bytes, bytearray)):
             self._drop("frame_type")
             return False
-        if len(data) > max(self.limits.max_frame_bytes, self.limits.max_hello_bytes):
+        L = self.limits
+        if len(data) > max(L.max_frame_bytes, L.max_hello_bytes, L.max_ae_bytes):
             self._drop("frame_size")
             return False
         return True
@@ -146,3 +157,28 @@ class IngressGuard:
         # of the message (dedupe across honest and sanitising relays still works).
         return Message(msg.kind, prio, msg.origin, msg.payload, msg.hlc, dest_cell=msg.dest_cell,
                        ttl_s=min(float(ttl), L.max_ttl_s), created=min(float(created), now))
+
+    # ---- anti-entropy frames ----------------------------------------------------------------
+    def ae_frame(self, f: Any, raw_len: int, from_id: str, now: float) -> Optional[dict]:
+        """An `ae.sum` / `ae.ev` frame from a radio neighbour -> the frame to hand to M8, or None.
+
+        Only the outer shape is checked here (frame type, size, container type, entry count); the
+        content is validated again by m8_merge.anti_entropy, which also treats it as hostile. The
+        sender budget is charged before the shape checks, like admit(), so junk still costs."""
+        L = self.limits
+        t = f.get("t") if isinstance(f, dict) else None
+        if not isinstance(t, str) or t not in AE_FRAMES:
+            return self._drop("ae_type")
+        if self.limiter is not None and not self.limiter.allow(from_id, now, 1.0):
+            return self._drop("rate_limited")
+        if raw_len > L.max_ae_bytes:
+            return self._drop("ae_size")
+        if t == AE_SUM:
+            body, cap = f.get("s"), L.max_ae_nodes
+            ok = isinstance(body, dict)
+        else:
+            body, cap = f.get("e"), L.max_ae_events
+            ok = isinstance(body, list)
+        if not ok or len(body) > cap:
+            return self._drop("ae_shape")
+        return f

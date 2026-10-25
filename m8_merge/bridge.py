@@ -1,7 +1,7 @@
 """Glue: M8 events ride M0 as Messages (epidemic flood, so partitions heal when carried across)."""
 from __future__ import annotations
 
-from core.types import Message, Priority
+from core.types import Message, event_priority
 from .event_log import Event
 from .replica import Replica
 
@@ -9,7 +9,7 @@ KIND = "m8.event"
 
 
 def to_message(ev: Event, now: float) -> Message:
-    prio = Priority.DISTRESS if ev.kind == "claim" else Priority.DISPATCH
+    prio = event_priority(ev.kind)   # same rule M0's ingress applies, so both ends agree
     return Message(KIND, prio, ev.node, ev.to_json(), ev.hlc, created=now)
 
 

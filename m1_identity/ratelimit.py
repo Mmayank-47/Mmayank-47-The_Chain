@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import Dict, Optional
 
-from m11_redteam.defenses import TokenBucket
+from core.ratelimit import TokenBucket
 
 from .copresence import CoPresence
 from .keys import Registry

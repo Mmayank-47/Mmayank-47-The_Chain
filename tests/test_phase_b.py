@@ -136,11 +136,11 @@ class TestDispatcher(unittest.TestCase):
     def test_routes_by_kind_and_counts_unrouted(self):
         d, got = Dispatcher(), []
         d.register("m8.event", lambda m: got.append(("a", m.kind)))
-        d.on("m4.hazard")(lambda m: got.append(("h", m.kind)))
+        d.on("m9.case")(lambda m: got.append(("c", m.kind)))
         self.assertEqual(d(msg("m8.event")), 1)
-        self.assertEqual(d(msg("m4.hazard")), 1)
-        self.assertEqual(d(msg("m5.vouch")), 0)
-        self.assertEqual(got, [("a", "m8.event"), ("h", "m4.hazard")])
+        self.assertEqual(d(msg("m9.case")), 1)
+        self.assertEqual(d(msg("m3.response")), 0)        # a known kind nobody registered for
+        self.assertEqual(got, [("a", "m8.event"), ("c", "m9.case")])
         self.assertEqual((d.stats["delivered"], d.stats["unrouted"]), (2, 1))
 
     def test_failing_handler_does_not_starve_the_next(self):

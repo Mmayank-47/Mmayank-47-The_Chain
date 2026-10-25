@@ -126,7 +126,7 @@ class TestHlcDrift(unittest.TestCase):
 
 
 # ---------------------------------------------------------------- A3: M0 ingress
-def wire(kind="m4.hazard", prio=Priority.DISTRESS, origin="o", payload=None, ttl=3600.0, created=0.0, cell="c"):
+def wire(kind="m9.case", prio=Priority.DISTRESS, origin="o", payload=None, ttl=3600.0, created=0.0, cell="c"):
     return Message(kind, prio, origin, payload if payload is not None else {"x": 1}, HLC(1, 0, origin),
                    dest_cell=cell, ttl_s=ttl, created=created)
 
@@ -134,9 +134,8 @@ def wire(kind="m4.hazard", prio=Priority.DISTRESS, origin="o", payload=None, ttl
 class TestIngressGuard(unittest.TestCase):
     def test_priority_comes_from_the_kind_not_the_wire(self):
         g = IngressGuard()
-        m = g.admit(wire("m5.vouch", Priority.DISTRESS), "p", 10.0)
-        self.assertEqual(m.priority, Priority.CHATTER)
-        self.assertEqual(g.admit(wire("m4.hazard", Priority.DISTRESS), "p", 10.0).priority, Priority.HAZARD)
+        m = g.admit(wire("m9.sealed", Priority.DISTRESS), "p", 10.0)
+        self.assertEqual(m.priority, Priority.DISPATCH)
         self.assertEqual(g.admit(wire("m9.case", Priority.CHATTER), "p", 10.0).priority, Priority.DISTRESS)
 
     def test_m8_events_get_distress_only_for_claims(self):
@@ -147,7 +146,7 @@ class TestIngressGuard(unittest.TestCase):
                          Priority.DISPATCH)
 
     def test_msg_id_is_unchanged_by_sanitising(self):
-        g, m = IngressGuard(), wire("m5.vouch", Priority.DISTRESS, ttl=10 ** 9)
+        g, m = IngressGuard(), wire("m9.sealed", Priority.DISTRESS, ttl=10 ** 9)
         self.assertEqual(g.admit(m, "p", 5.0).msg_id, m.msg_id)
 
     def test_unknown_kind_dropped_and_counted(self):
@@ -240,14 +239,14 @@ class TestIngressOnTheMesh(unittest.TestCase):
         self.assertEqual(got, [])
         self.assertEqual(rx.neighbors, {})
 
-    def test_attacker_cannot_promote_chatter_to_distress_on_the_wire(self):
+    def test_attacker_cannot_promote_a_hazard_to_distress_on_the_wire(self):
         m, rx, tx, got = self.mesh()
         m.transmit("tx", "rx", json.dumps({"t": "hello", "id": "tx", "cell": None, "bat": 1.0,
                                            "bf": BloomFilter.for_capacity(16).to_json()}).encode(), 0.0)
-        forged = wire("m5.vouch", Priority.DISTRESS, created=0.0)
+        forged = wire("m8.event", Priority.DISTRESS, payload={"k": "hazard"}, created=0.0)
         m.transmit("tx", "rx", json.dumps({"t": "data", "m": forged.to_wire(), "tok": 3}).encode(), 0.0)
         self.spin([rx], 0, 2)
-        self.assertEqual([x.priority for x in got], [Priority.CHATTER])
+        self.assertEqual([x.priority for x in got], [Priority.HAZARD])
 
     def test_replica_bridge_survives_the_guard(self):
         clk, m = Clock(), SimMedium(rng=random.Random(2))

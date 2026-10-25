@@ -9,19 +9,7 @@ import hashlib
 import hmac
 from typing import Dict, Optional, Set, Tuple
 
-
-class TokenBucket:
-    def __init__(self, rate: float, burst: float):
-        self.rate, self.burst = rate, burst
-        self.tokens, self.t = burst, 0.0
-
-    def allow(self, now: float, cost: float = 1.0) -> bool:
-        self.tokens = min(self.burst, self.tokens + self.rate * max(0.0, now - self.t))
-        self.t = max(self.t, now)
-        if self.tokens >= cost:
-            self.tokens -= cost
-            return True
-        return False
+from core.ratelimit import TokenBucket  # noqa: F401  (moved to core; re-exported for old imports)
 
 
 class RateLimiter:

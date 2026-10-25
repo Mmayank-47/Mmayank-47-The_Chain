@@ -8,7 +8,7 @@ from typing import Callable, Dict, Optional
 from core.bloom import BloomFilter
 from core.types import Message
 from .gossip import GossipEngine, NeighborInfo
-from .ingress import IngressGuard
+from .ingress import AE_FRAMES, IngressGuard
 from .radio_adapter import Radio, SimMedium, SimRadio
 
 
@@ -24,6 +24,9 @@ class MeshNode:
         self.hello_interval, self.neighbor_timeout = hello_interval, neighbor_timeout
         self.get_cell, self.get_battery = get_cell, get_battery
         self.neighbors: Dict[str, NeighborInfo] = {}
+        # frame type -> handler(from_id, frame, now) for the anti-entropy frames in ingress.AE_FRAMES.
+        # With a guard they only get here after IngressGuard.ae_frame() has admitted them.
+        self.frame_handlers: Dict[str, Callable[[str, dict, float], None]] = {}
         self._last_hello = -1e9
 
     def originate(self, msg: Message, now: float) -> bool:
@@ -71,6 +74,14 @@ class MeshNode:
                     if msg is None:
                         return
                 self.engine.receive(msg, f.get("tok"), now, frm)
+            elif f["t"] in AE_FRAMES:
+                if g is not None:
+                    f = g.ae_frame(f, len(data), frm, now)
+                    if f is None:
+                        return
+                handler = self.frame_handlers.get(f["t"])
+                if handler is not None:
+                    handler(frm, f, now)
         except (ValueError, KeyError, TypeError):
             pass    # malformed frame from a hostile peer: drop silently
 

@@ -28,6 +28,17 @@ class DispatchState(IntEnum):
     RESOLVED = 4
 
 
+# Wire priority of an M8 event, by event kind (Event.kind). M0's ingress guard and the bridge both
+# use it so the two ends agree: claims are distress, hazards ride the hazard class, and everything
+# else (dispatch, state, beat, vouch, ...) is dispatch.
+EVENT_PRIORITY: Dict[str, Priority] = {"claim": Priority.DISTRESS, "hazard": Priority.HAZARD}
+
+
+def event_priority(kind: Any) -> Priority:
+    """A non-string kind (hostile payload) gets the default instead of raising."""
+    return EVENT_PRIORITY.get(kind, Priority.DISPATCH) if isinstance(kind, str) else Priority.DISPATCH
+
+
 def canonical(obj: Any) -> bytes:
     return json.dumps(obj, sort_keys=True, separators=(",", ":")).encode()
 
