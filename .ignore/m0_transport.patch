@@ -1,0 +1,778 @@
+diff --git a/core/__init__.py b/core/__init__.py
+new file mode 100644
+index 0000000..1f45a3d
+--- /dev/null
++++ b/core/__init__.py
+@@ -0,0 +1 @@
++"""Shared types, CRDTs and Bloom filter."""
+diff --git a/core/bloom.py b/core/bloom.py
+new file mode 100644
+index 0000000..c344f68
+--- /dev/null
++++ b/core/bloom.py
+@@ -0,0 +1,35 @@
++"""Tiny Bloom filter: compact 'what do I already have' summaries for beacons."""
++from __future__ import annotations
++
++import hashlib
++import math
++
++
++class BloomFilter:
++    def __init__(self, m_bits: int = 256, k: int = 4, bits: int = 0):
++        self.m, self.k, self.bits = m_bits, k, bits
++
++    @classmethod
++    def for_capacity(cls, n: int, fp: float = 0.01) -> "BloomFilter":
++        n = max(n, 16)
++        m = max(64, int(-n * math.log(fp) / (math.log(2) ** 2)))
++        k = max(1, round(m / n * math.log(2)))
++        return cls(m, k)
++
++    def _idx(self, item: str):
++        d = hashlib.sha256(item.encode()).digest()
++        return [int.from_bytes(d[4 * i:4 * i + 4], "big") % self.m for i in range(self.k)]
++
++    def add(self, item: str):
++        for i in self._idx(item):
++            self.bits |= 1 << i
++
++    def __contains__(self, item: str) -> bool:
++        return all(self.bits >> i & 1 for i in self._idx(item))
++
++    def to_json(self):
++        return [self.m, self.k, format(self.bits, "x")]
++
++    @staticmethod
++    def from_json(x) -> "BloomFilter":
++        return BloomFilter(int(x[0]), int(x[1]), int(x[2], 16))
+diff --git a/core/types.py b/core/types.py
+new file mode 100644
+index 0000000..238c6ab
+--- /dev/null
++++ b/core/types.py
+@@ -0,0 +1,120 @@
++"""Shared types: priorities, dispatch lattice, hybrid logical clock, wire Message."""
++from __future__ import annotations
++
++import hashlib
++import json
++import time
++from dataclasses import dataclass, field
++from enum import IntEnum
++from typing import Any, Callable, Dict, Optional
++
++NodeId = str
++
++
++class Priority(IntEnum):
++    """Lower number = sent first (distress > dispatch > hazard > chatter)."""
++    DISTRESS = 0
++    DISPATCH = 1
++    HAZARD = 2
++    CHATTER = 3
++
++
++class DispatchState(IntEnum):
++    """Monotonic lattice: a state can only move forward, never back."""
++    PROPOSED = 0
++    ACCEPTED = 1
++    EN_ROUTE = 2
++    ARRIVED = 3
++    RESOLVED = 4
++
++
++def canonical(obj: Any) -> bytes:
++    return json.dumps(obj, sort_keys=True, separators=(",", ":")).encode()
++
++
++def sha256_hex(data: bytes) -> str:
++    return hashlib.sha256(data).hexdigest()
++
++
++@dataclass(frozen=True, order=True)
++class HLC:
++    """Hybrid logical clock stamp. Orders by (wall ms, counter, node id)."""
++    wall: int
++    counter: int
++    node: str
++
++    def to_json(self):
++        return [self.wall, self.counter, self.node]
++
++    @staticmethod
++    def from_json(x) -> "HLC":
++        return HLC(int(x[0]), int(x[1]), str(x[2]))
++
++
++ZERO_HLC = HLC(0, 0, "")
++
++
++class HLClock:
++    """Standard HLC (Kulkarni et al.). now() = local/send event, update() = receive."""
++
++    def __init__(self, node: str, now_ms: Optional[Callable[[], int]] = None):
++        self.node = node
++        self._now = now_ms or (lambda: int(time.time() * 1000))
++        self._wall = 0
++        self._counter = 0
++
++    def now(self) -> HLC:
++        pt = self._now()
++        if pt > self._wall:
++            self._wall, self._counter = pt, 0
++        else:
++            self._counter += 1
++        return HLC(self._wall, self._counter, self.node)
++
++    def update(self, remote: HLC) -> HLC:
++        pt = self._now()
++        new = max(self._wall, remote.wall, pt)
++        if new == self._wall == remote.wall:
++            c = max(self._counter, remote.counter) + 1
++        elif new == self._wall:
++            c = self._counter + 1
++        elif new == remote.wall:
++            c = remote.counter + 1
++        else:
++            c = 0
++        self._wall, self._counter = new, c
++        return HLC(new, c, self.node)
++
++
++@dataclass
++class Message:
++    """Unit M0 carries. msg_id depends only on immutable content (not on hops/tokens)."""
++    kind: str
++    priority: Priority
++    origin: str
++    payload: dict
++    hlc: HLC
++    dest_cell: Optional[str] = None   # coarse cell (M9: never exact location)
++    ttl_s: float = 3600.0
++    created: float = 0.0              # seconds, originator's clock
++    msg_id: str = field(init=False, default="")
++
++    def __post_init__(self):
++        body = {"k": self.kind, "o": self.origin, "d": self.payload, "h": self.hlc.to_json()}
++        self.msg_id = sha256_hex(canonical(body))[:16]
++
++    def expired(self, now: float) -> bool:
++        return now - self.created > self.ttl_s
++
++    def to_wire(self) -> dict:
++        return {"k": self.kind, "p": int(self.priority), "o": self.origin, "d": self.payload,
++                "h": self.hlc.to_json(), "c": self.dest_cell, "ttl": self.ttl_s, "cr": self.created}
++
++    def wire_bytes(self) -> bytes:
++        return canonical(self.to_wire())
++
++    @staticmethod
++    def from_wire(d: dict) -> "Message":
++        return Message(kind=d["k"], priority=Priority(d["p"]), origin=d["o"], payload=d["d"],
++                       hlc=HLC.from_json(d["h"]), dest_cell=d.get("c"),
++                       ttl_s=float(d.get("ttl", 3600.0)), created=float(d.get("cr", 0.0)))
+diff --git a/m0_transport/__init__.py b/m0_transport/__init__.py
+new file mode 100644
+index 0000000..5d7b68a
+--- /dev/null
++++ b/m0_transport/__init__.py
+@@ -0,0 +1 @@
++"""M0: mesh transport, gossip and store-carry-forward (DTN)."""
+diff --git a/m0_transport/dtn.py b/m0_transport/dtn.py
+new file mode 100644
+index 0000000..09c8a92
+--- /dev/null
++++ b/m0_transport/dtn.py
+@@ -0,0 +1,106 @@
++"""Delay-tolerant carry store + spray-and-wait token rules.
++
++Epidemic classes (tokens=None): distress/dispatch/hazard flood while people are in contact.
++Spray classes (int tokens): chatter. Binary spray: hand over half your tokens; with one
++token left you only forward to a peer inside the message's destination cell ('wait' phase).
++"""
++from __future__ import annotations
++
++from dataclasses import dataclass
++from typing import Dict, Iterator, Optional, Tuple
++
++from core.bloom import BloomFilter
++from core.types import Message, Priority
++
++
++@dataclass
++class Carried:
++    msg: Message
++    tokens: Optional[int]
++    received: float
++
++
++class SprayPolicy:
++    DEFAULT: Dict[Priority, Optional[int]] = {
++        Priority.DISTRESS: None, Priority.DISPATCH: None,
++        Priority.HAZARD: None, Priority.CHATTER: 4,
++    }
++
++    def __init__(self, table: Optional[Dict[Priority, Optional[int]]] = None):
++        self.table = dict(self.DEFAULT if table is None else table)
++
++    def tokens_for(self, p: Priority) -> Optional[int]:
++        return self.table.get(p)
++
++    def clamp(self, p: Priority, incoming: Optional[int]) -> Optional[int]:
++        """Never trust a peer's claimed token count above our own policy."""
++        cap = self.tokens_for(p)
++        if cap is None:
++            return incoming
++        return cap if incoming is None else min(incoming, cap)
++
++
++def plan_handoff(c: Carried, peer_cell: Optional[str]) -> Tuple[bool, Optional[int], Optional[int]]:
++    """-> (send?, tokens_given, tokens_kept)."""
++    t = c.tokens
++    if t is None:
++        return True, None, None
++    if t > 1:
++        give = t // 2
++        return True, give, t - give
++    if c.msg.dest_cell is not None and peer_cell == c.msg.dest_cell:
++        return True, 1, 0
++    return False, 0, t
++
++
++class CarryStore:
++    """Bounded buffer of messages this phone is physically carrying."""
++
++    def __init__(self, capacity: int = 512):
++        self.capacity = capacity
++        self._c: Dict[str, Carried] = {}
++        self._seen: Dict[str, float] = {}   # msg_id -> expiry, survives eviction (anti re-accept)
++
++    def __len__(self):
++        return len(self._c)
++
++    def get(self, mid: str) -> Optional[Carried]:
++        return self._c.get(mid)
++
++    def items(self) -> Iterator[Tuple[str, Carried]]:
++        return iter(list(self._c.items()))
++
++    def seen(self, mid: str) -> bool:
++        return mid in self._seen
++
++    def add(self, msg: Message, tokens: Optional[int], now: float) -> bool:
++        if msg.msg_id in self._seen:
++            return False
++        if len(self._c) >= self.capacity and not self._evict_for(msg):
++            return False
++        self._c[msg.msg_id] = Carried(msg, tokens, now)
++        self._seen[msg.msg_id] = msg.created + msg.ttl_s
++        return True
++
++    def _evict_for(self, msg: Message) -> bool:
++        # drop the lowest-priority, oldest carried message, only if new one outranks it
++        worst = max(self._c.values(), key=lambda c: (int(c.msg.priority), -c.received))
++        if int(worst.msg.priority) <= int(msg.priority):
++            return False
++        del self._c[worst.msg.msg_id]
++        return True
++
++    def remove(self, mid: str):
++        self._c.pop(mid, None)
++
++    def expire(self, now: float):
++        for mid in [m for m, c in self._c.items() if c.msg.expired(now)]:
++            del self._c[mid]
++        for mid in [m for m, e in self._seen.items() if now > e]:
++            del self._seen[mid]
++
++    def bloom(self) -> BloomFilter:
++        b = BloomFilter.for_capacity(len(self._c))
++        for mid in self._c:
++            b.add(mid)
++        return b
+diff --git a/m0_transport/gossip.py b/m0_transport/gossip.py
+new file mode 100644
+index 0000000..57a012b
+--- /dev/null
++++ b/m0_transport/gossip.py
+@@ -0,0 +1,136 @@
++"""Adaptive gossip: decide who gets what each tick, within an airtime byte budget."""
++from __future__ import annotations
++
++import random
++from dataclasses import dataclass, field
++from typing import Callable, Dict, Optional, Set
++
++from core.bloom import BloomFilter
++from core.types import Message, Priority
++from .dtn import CarryStore, SprayPolicy, plan_handoff
++from .priority_queue import PriorityOutbox
++
++
++@dataclass
++class NeighborInfo:
++    id: str
++    have: object = field(default_factory=set)   # BloomFilter or set of msg_ids
++    cell: Optional[str] = None
++    battery: float = 1.0
++    last_seen: float = 0.0
++
++
++@dataclass
++class Transmission:
++    to: str
++    msg: Message
++    tokens: Optional[int]
++
++
++class GossipEngine:
++    def __init__(self, node_id: str, *, store: Optional[CarryStore] = None,
++                 policy: Optional[SprayPolicy] = None, base_fanout: int = 3,
++                 byte_budget: int = 4096, resend_after: float = 5.0,
++                 rng: Optional[random.Random] = None,
++                 on_deliver: Optional[Callable[[Message], None]] = None):
++        self.node_id = node_id
++        self.store = store or CarryStore()
++        self.policy = policy or SprayPolicy()
++        self.base_fanout = base_fanout
++        self.byte_budget = byte_budget
++        self.resend_after = resend_after
++        self.rng = rng or random.Random()
++        self.on_deliver = on_deliver
++        self.outbox = PriorityOutbox()
++        self._sent: Dict[str, Dict[str, float]] = {}   # msg_id -> peer -> time
++
++    # ---- ingress -------------------------------------------------------
++    def originate(self, msg: Message, now: float) -> bool:
++        if not msg.created:
++            msg.created = now
++        return self.store.add(msg, self.policy.tokens_for(msg.priority), now)
++
++    def receive(self, msg: Message, tokens: Optional[int], now: float,
++                from_id: Optional[str] = None) -> bool:
++        if msg.expired(now):
++            return False
++        if not self.store.add(msg, self.policy.clamp(msg.priority, tokens), now):
++            if from_id:
++                self._mark(msg.msg_id, from_id, now)
++            return False
++        if from_id:
++            self._mark(msg.msg_id, from_id, now)
++        if self.on_deliver:
++            self.on_deliver(msg)
++        return True
++
++    def _mark(self, mid: str, peer: str, now: float):
++        self._sent.setdefault(mid, {})[peer] = now
++
++    def _recently_sent(self, mid: str, peer: str, now: float) -> bool:
++        t = self._sent.get(mid, {}).get(peer)
++        return t is not None and now - t < self.resend_after
++
++    # ---- policy --------------------------------------------------------
++    def fanout(self, n_lacking: int, density: int, battery: float, prio: Priority) -> int:
++        """Adaptive: shrink in dense crowds (broadcast storms) and on low battery;
++        distress never drops below 2 so it keeps moving."""
++        k = self.base_fanout
++        if density > 10:
++            k -= 1
++        if battery < 0.5:
++            k -= 1
++        if battery < 0.15:
++            k = 1
++        k = max(1, k)
++        if prio == Priority.DISTRESS:
++            k = max(k, 2)
++        return min(k, n_lacking)
++
++    # ---- egress --------------------------------------------------------
++    def step(self, neighbors: Dict[str, NeighborInfo], now: float,
++             battery: float = 1.0) -> list:
++        self.store.expire(now)
++        for mid in [m for m in self._sent if not self.store.seen(m)]:
++            del self._sent[mid]
++        density = len(neighbors)
++        for mid, c in self.store.items():
++            lacking = [n for n in neighbors.values()
++                       if mid not in n.have and not self._recently_sent(mid, n.id, now)]
++            if c.tokens is not None and c.tokens <= 1:      # wait phase
++                lacking = [n for n in lacking
++                           if c.msg.dest_cell is not None and n.cell == c.msg.dest_cell]
++            if not lacking:
++                continue
++            k = self.fanout(len(lacking), density, battery, c.msg.priority)
++            lacking.sort(key=lambda n: (-n.battery, self.rng.random()))   # prefer charged relays
++            for n in lacking[:k]:
++                self.outbox.push((n.id, mid), c.msg.priority, (n.id, mid))
++        return self._drain(neighbors, now)
++
++    def _drain(self, neighbors: Dict[str, NeighborInfo], now: float) -> list:
++        out, used = [], 0
++        while True:
++            item = self.outbox.pop()
++            if item is None:
++                break
++            peer, mid = item
++            n, c = neighbors.get(peer), self.store.get(mid)
++            if n is None or c is None or mid in n.have or self._recently_sent(mid, peer, now):
++                continue
++            size = len(c.msg.wire_bytes())
++            if out and used + size > self.byte_budget:
++                self.outbox.push(item, c.msg.priority, item)    # keep for next tick
++                break
++            ok, give, keep = plan_handoff(c, n.cell)
++            if not ok:
++                continue
++            used += size
++            self._mark(mid, peer, now)
++            out.append(Transmission(peer, c.msg, give))
++            if keep is not None:
++                if keep <= 0:
++                    self.store.remove(mid)
++                else:
++                    c.tokens = keep
++        return out
+diff --git a/m0_transport/node.py b/m0_transport/node.py
+new file mode 100644
+index 0000000..3dec74d
+--- /dev/null
++++ b/m0_transport/node.py
+@@ -0,0 +1,60 @@
++"""MeshNode: beacons + neighbor table + gossip engine on top of any Radio."""
++from __future__ import annotations
++
++import json
++import random
++from typing import Callable, Dict, Optional
++
++from core.bloom import BloomFilter
++from core.types import Message
++from .gossip import GossipEngine, NeighborInfo
++from .radio_adapter import Radio, SimMedium, SimRadio
++
++
++class MeshNode:
++    def __init__(self, node_id: str, radio: Radio, engine: GossipEngine, *,
++                 hello_interval: float = 2.0, neighbor_timeout: float = 6.0,
++                 get_cell: Callable[[], Optional[str]] = lambda: None,
++                 get_battery: Callable[[], float] = lambda: 1.0):
++        self.id, self.radio, self.engine = node_id, radio, engine
++        self.hello_interval, self.neighbor_timeout = hello_interval, neighbor_timeout
++        self.get_cell, self.get_battery = get_cell, get_battery
++        self.neighbors: Dict[str, NeighborInfo] = {}
++        self._last_hello = -1e9
++
++    def originate(self, msg: Message, now: float) -> bool:
++        return self.engine.originate(msg, now)
++
++    def tick(self, now: float):
++        if now - self._last_hello >= self.hello_interval:
++            hello = {"t": "hello", "id": self.id, "cell": self.get_cell(),
++                     "bat": self.get_battery(), "bf": self.engine.store.bloom().to_json()}
++            self.radio.broadcast(json.dumps(hello).encode(), now)
++            self._last_hello = now
++        for frm, data in self.radio.poll(now):
++            self._handle(frm, data, now)
++        for pid in [p for p, n in self.neighbors.items()
++                    if now - n.last_seen > self.neighbor_timeout]:
++            del self.neighbors[pid]
++        for tx in self.engine.step(self.neighbors, now, self.get_battery()):
++            frame = {"t": "data", "m": tx.msg.to_wire(), "tok": tx.tokens}
++            self.radio.send(tx.to, json.dumps(frame).encode(), now)
++
++    def _handle(self, frm: str, data: bytes, now: float):
++        try:
++            f = json.loads(data)
++            if f["t"] == "hello":
++                self.neighbors[frm] = NeighborInfo(frm, BloomFilter.from_json(f["bf"]),
++                                                   f.get("cell"), float(f.get("bat", 1.0)), now)
++            elif f["t"] == "data":
++                if frm in self.neighbors:
++                    self.neighbors[frm].last_seen = now
++                self.engine.receive(Message.from_wire(f["m"]), f.get("tok"), now, frm)
++        except (ValueError, KeyError, TypeError):
++            pass    # malformed frame from a hostile peer: drop silently
++
++
++def build_sim_node(node_id: str, medium: SimMedium, *, seed: int = 0,
++                   on_deliver=None, **kw) -> MeshNode:
++    eng = GossipEngine(node_id, rng=random.Random(f"{seed}:{node_id}"), on_deliver=on_deliver)
++    return MeshNode(node_id, SimRadio(node_id, medium), eng, **kw)
+diff --git a/m0_transport/priority_queue.py b/m0_transport/priority_queue.py
+new file mode 100644
+index 0000000..e243bca
+--- /dev/null
++++ b/m0_transport/priority_queue.py
+@@ -0,0 +1,42 @@
++"""Bounded priority outbox: distress > dispatch > hazard > chatter, FIFO within a class."""
++from __future__ import annotations
++
++import heapq
++from typing import Any, Dict, Hashable, Optional, Tuple
++
++
++class PriorityOutbox:
++    def __init__(self, capacity: int = 256):
++        self.capacity = capacity
++        self._heap: list = []
++        self._items: Dict[Hashable, Tuple[int, int, Any]] = {}
++        self._seq = 0
++
++    def __len__(self):
++        return len(self._items)
++
++    def __contains__(self, item_id):
++        return item_id in self._items
++
++    def push(self, item_id: Hashable, priority: int, payload: Any = None) -> bool:
++        """False if duplicate, or if full and the new item is no better than the worst queued."""
++        if item_id in self._items:
++            return False
++        if len(self._items) >= self.capacity:
++            worst_id = max(self._items, key=lambda i: (self._items[i][0], self._items[i][1]))
++            if self._items[worst_id][0] <= priority:
++                return False
++            del self._items[worst_id]      # lazy-removed from the heap
++        self._seq += 1
++        self._items[item_id] = (int(priority), self._seq, payload)
++        heapq.heappush(self._heap, (int(priority), self._seq, item_id))
++        return True
++
++    def pop(self) -> Optional[Any]:
++        while self._heap:
++            prio, seq, item_id = heapq.heappop(self._heap)
++            cur = self._items.get(item_id)
++            if cur is not None and cur[1] == seq:
++                del self._items[item_id]
++                return cur[2]
++        return None
+diff --git a/m0_transport/radio_adapter.py b/m0_transport/radio_adapter.py
+new file mode 100644
+index 0000000..99a5df6
+--- /dev/null
++++ b/m0_transport/radio_adapter.py
+@@ -0,0 +1,71 @@
++"""Radio abstraction (BLE / Wi-Fi Aware / LoRa plug in here) + in-memory simulated medium."""
++from __future__ import annotations
++
++import random
++from abc import ABC, abstractmethod
++from collections import defaultdict
++from typing import Dict, List, Optional, Set, Tuple
++
++
++class Radio(ABC):
++    @abstractmethod
++    def broadcast(self, data: bytes, now: float): ...
++    @abstractmethod
++    def send(self, to: str, data: bytes, now: float) -> bool: ...
++    @abstractmethod
++    def poll(self, now: float) -> List[Tuple[str, bytes]]: ...
++
++
++class SimMedium:
++    """Shared air. Links are undirected; loss and latency are per frame."""
++
++    def __init__(self, loss: float = 0.0, latency_s: float = 0.0,
++                 rng: Optional[random.Random] = None):
++        self.loss, self.latency = loss, latency_s
++        self.rng = rng or random.Random(0)
++        self.links: Dict[str, Set[str]] = defaultdict(set)
++        self._q: List[Tuple[float, str, str, bytes]] = []
++        self.frames_sent = 0
++        self.bytes_sent = 0
++
++    def link(self, a: str, b: str):
++        self.links[a].add(b)
++        self.links[b].add(a)
++
++    def unlink(self, a: str, b: str):
++        self.links[a].discard(b)
++        self.links[b].discard(a)
++
++    def isolate(self, a: str):
++        for b in list(self.links[a]):
++            self.unlink(a, b)
++
++    def transmit(self, frm: str, to: str, data: bytes, now: float) -> bool:
++        if to not in self.links[frm]:
++            return False
++        self.frames_sent += 1
++        self.bytes_sent += len(data)
++        if self.rng.random() < self.loss:
++            return True            # sent, lost in the air
++        self._q.append((now + self.latency, to, frm, data))
++        return True
++
++    def pop_for(self, node: str, now: float) -> List[Tuple[str, bytes]]:
++        ready = [(t, to, frm, d) for (t, to, frm, d) in self._q if to == node and t <= now]
++        self._q = [e for e in self._q if e not in ready]
++        return [(frm, d) for (_, _, frm, d) in sorted(ready, key=lambda e: e[0])]
++
++
++class SimRadio(Radio):
++    def __init__(self, node_id: str, medium: SimMedium):
++        self.id, self.m = node_id, medium
++
++    def broadcast(self, data: bytes, now: float):
++        for peer in list(self.m.links[self.id]):
++            self.m.transmit(self.id, peer, data, now)
++
++    def send(self, to: str, data: bytes, now: float) -> bool:
++        return self.m.transmit(self.id, to, data, now)
++
++    def poll(self, now: float) -> List[Tuple[str, bytes]]:
++        return self.m.pop_for(self.id, now)
+diff --git a/tests/__init__.py b/tests/__init__.py
+new file mode 100644
+index 0000000..d420712
+--- /dev/null
++++ b/tests/__init__.py
+@@ -0,0 +1 @@
++"""Tests."""
+diff --git a/tests/test_m0.py b/tests/test_m0.py
+new file mode 100644
+index 0000000..d60477a
+--- /dev/null
++++ b/tests/test_m0.py
+@@ -0,0 +1,139 @@
++import random
++import unittest
++
++from core.bloom import BloomFilter
++from core.types import HLC, Message, Priority
++from m0_transport.dtn import CarryStore, Carried, plan_handoff, SprayPolicy
++from m0_transport.node import build_sim_node
++from m0_transport.priority_queue import PriorityOutbox
++from m0_transport.radio_adapter import SimMedium
++
++
++def msg(i, prio=Priority.DISTRESS, origin="n0", cell=None, now=0.0, ttl=3600):
++    return Message("t", prio, origin, {"i": i}, HLC(1, i, origin), dest_cell=cell,
++                   created=now, ttl_s=ttl)
++
++
++def run(nodes, t0, t1, dt=1.0, hook=None):
++    t = t0
++    while t < t1:
++        if hook:
++            hook(t)
++        for n in nodes:
++            n.tick(t)
++        t += dt
++    return t
++
++
++class TestQueue(unittest.TestCase):
++    def test_priority_order_dedupe_eviction(self):
++        q = PriorityOutbox(capacity=3)
++        q.push("c", Priority.CHATTER, "c")
++        q.push("h", Priority.HAZARD, "h")
++        q.push("d", Priority.DISTRESS, "d")
++        self.assertFalse(q.push("d", Priority.DISTRESS, "dup"))
++        self.assertFalse(q.push("c2", Priority.CHATTER, "c2"))   # full, not better than worst
++        self.assertTrue(q.push("d2", Priority.DISTRESS, "d2"))   # evicts chatter
++        self.assertEqual([q.pop() for _ in range(3)], ["d", "d2", "h"])
++        self.assertIsNone(q.pop())
++
++
++class TestDTN(unittest.TestCase):
++    def test_store_expiry_dedupe_and_eviction(self):
++        s = CarryStore(capacity=2)
++        self.assertTrue(s.add(msg(1, Priority.CHATTER, ttl=10), 2, 0))
++        self.assertFalse(s.add(msg(1, Priority.CHATTER, ttl=10), 2, 0))
++        s.add(msg(2, Priority.HAZARD), None, 0)
++        self.assertTrue(s.add(msg(3, Priority.DISTRESS), None, 0))   # evicts chatter
++        self.assertEqual(len(s), 2)
++        s.expire(100)
++        self.assertEqual(len(s), 2)      # default ttl 3600: still alive
++        s.expire(4000)
++        self.assertEqual(len(s), 0)      # expired
++
++    def test_spray_halving_and_wait_phase(self):
++        c = Carried(msg(1, Priority.CHATTER, cell="X"), 4, 0)
++        self.assertEqual(plan_handoff(c, "Y"), (True, 2, 2))
++        c.tokens = 1
++        self.assertEqual(plan_handoff(c, "Y"), (False, 0, 1))
++        self.assertEqual(plan_handoff(c, "X"), (True, 1, 0))
++
++    def test_token_clamp(self):
++        self.assertEqual(SprayPolicy().clamp(Priority.CHATTER, 10_000), 4)
++
++    def test_bloom(self):
++        b = BloomFilter.for_capacity(100)
++        for i in range(100):
++            b.add(f"id{i}")
++        self.assertTrue(all(f"id{i}" in b for i in range(100)))
++        fp = sum(f"x{i}" in b for i in range(1000))
++        self.assertLess(fp, 40)
++
++
++class TestGossip(unittest.TestCase):
++    def line(self, n, **medium_kw):
++        m = SimMedium(rng=random.Random(3), **medium_kw)
++        got = {}
++        nodes = []
++        for i in range(n):
++            nid = f"n{i}"
++            nodes.append(build_sim_node(nid, m, on_deliver=lambda ms, nid=nid: got.setdefault(nid, ms)))
++        for i in range(n - 1):
++            m.link(f"n{i}", f"n{i+1}")
++        return m, nodes, got
++
++    def test_multihop_distress(self):
++        m, nodes, got = self.line(6)
++        nodes[0].originate(msg(1), 0)
++        run(nodes, 0, 30)
++        self.assertIn("n5", got)
++
++    def test_priority_under_tight_budget(self):
++        m, nodes, got = self.line(2)
++        nodes[0].engine.byte_budget = 1          # one frame per tick
++        nodes[0].originate(msg(1, Priority.CHATTER), 0)
++        nodes[0].originate(msg(2, Priority.DISTRESS), 0)
++        order = []
++        nodes[1].engine.on_deliver = lambda ms: order.append(ms.priority)
++        run(nodes, 0, 12)
++        self.assertEqual(order[0], Priority.DISTRESS)
++        self.assertEqual(len(order), 2)
++
++    def test_survives_loss(self):
++        m, nodes, got = self.line(5, loss=0.4)
++        nodes[0].originate(msg(1), 0)
++        run(nodes, 0, 120)
++        self.assertIn("n4", got)
++
++    def test_low_battery_shrinks_fanout(self):
++        e = build_sim_node("x", SimMedium()).engine
++        self.assertEqual(e.fanout(10, 5, 1.0, Priority.HAZARD), 3)
++        self.assertEqual(e.fanout(10, 5, 0.1, Priority.HAZARD), 1)
++        self.assertEqual(e.fanout(10, 5, 0.1, Priority.DISTRESS), 2)
++        self.assertEqual(e.fanout(10, 20, 1.0, Priority.HAZARD), 2)
++
++    def test_malformed_frame_ignored(self):
++        m, nodes, got = self.line(2)
++        m.transmit("n0", "n1", b"\xff not json", 0)
++        run(nodes, 0, 3)     # must not raise
++
++    def test_mule_carries_across_partition(self):
++        m = SimMedium(rng=random.Random(5))
++        got = {}
++        mk = lambda n: build_sim_node(n, m, on_deliver=lambda ms, n=n: got.setdefault(n, ms))
++        a1, a2, mule, b1, b2 = (mk(n) for n in ["a1", "a2", "mule", "b1", "b2"])
++        m.link("a1", "a2"); m.link("b1", "b2"); m.link("mule", "a1")
++        nodes = [a1, a2, mule, b1, b2]
++        a1.originate(msg(1, Priority.DISTRESS, origin="a1"), 0)
++        t = run(nodes, 0, 15)
++        self.assertIn("mule", got); self.assertIn("a2", got)
++        self.assertNotIn("b1", got)                      # island B still cut off
++        m.isolate("mule"); run(nodes, t, t + 10)         # mule walking
++        self.assertNotIn("b1", got)
++        m.link("mule", "b1")                             # arrives at island B
++        run(nodes, t + 10, t + 30)
++        self.assertIn("b1", got); self.assertIn("b2", got)
++
++
++if __name__ == "__main__":
++    unittest.main()
