@@ -114,6 +114,9 @@ export const BottomNav: React.FC<BottomNavProps> = ({
             return (
               <button
                 key={tab.key}
+                id={`nav-tab-${tab.key}`}
+                data-tab={tab.key}
+                aria-label={tab.label}
                 type="button"
                 onClick={() => onTabChange(tab.key)}
                 className={`relative flex items-center gap-1.5 py-2 px-3 sm:px-3.5 rounded-full transition-all duration-200 select-none ${

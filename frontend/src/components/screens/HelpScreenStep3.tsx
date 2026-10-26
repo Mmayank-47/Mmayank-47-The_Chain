@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { api } from '../../api/client';
+import { useMeshEvents } from '../../api/events';
 import { ParsedSituation } from '../../types';
 
 interface HelpScreenStep3Props {
   rawText: string;
   parsed: ParsedSituation;
+  claimId?: string;
   onCancelBroadcast: () => void;
   onNewRequest: () => void;
 }
@@ -11,36 +14,80 @@ interface HelpScreenStep3Props {
 export const HelpScreenStep3: React.FC<HelpScreenStep3Props> = ({
   rawText,
   parsed,
+  claimId,
   onCancelBroadcast,
   onNewRequest,
 }) => {
   const [hops, setHops] = useState(1);
   const [nodesRelayed, setNodesRelayed] = useState(4);
-  const [acknowledged, setAcknowledged] = useState(false);
+  const [dispatchStatus, setDispatchStatus] = useState<string>('PROPOSED');
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [isAborting, setIsAborting] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 2500);
+  };
+
+  // Live timer
   useEffect(() => {
     const timer = setInterval(() => {
       setElapsedSeconds((s) => s + 1);
     }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
-    const hopTimer = setTimeout(() => {
-      setHops(2);
-      setNodesRelayed(7);
-    }, 3500);
-
-    const ackTimer = setTimeout(() => {
-      setHops(3);
-      setNodesRelayed(11);
-      setAcknowledged(true);
-    }, 7000);
-
+  // Poll mesh status to get real connected neighbor count
+  useEffect(() => {
+    let mounted = true;
+    const fetchMesh = async () => {
+      try {
+        const mesh = await api.getMesh();
+        if (mounted) {
+          setNodesRelayed(mesh.neighbors.length || 1);
+        }
+      } catch (err) {
+        console.error('Failed to query mesh status:', err);
+      }
+    };
+    fetchMesh();
+    const interval = setInterval(fetchMesh, 4000);
     return () => {
-      clearInterval(timer);
-      clearTimeout(hopTimer);
-      clearTimeout(ackTimer);
+      mounted = false;
+      clearInterval(interval);
     };
   }, []);
+
+  // Subscribe to real mesh events via SSE
+  useMeshEvents((ev) => {
+    if (ev.type === 'dispatch_state' && ev.data) {
+      if (!claimId || ev.data.claim_id === claimId || ev.data.did?.includes(claimId)) {
+        setDispatchStatus(ev.data.state || 'ACCEPTED');
+        showToast(`Mesh Dispatch: ${ev.data.state}`);
+      }
+    } else if (ev.type === 'message_delivered') {
+      setHops((h) => Math.max(h, 2));
+    } else if (ev.type === 'neighbor_up') {
+      setNodesRelayed((n) => n + 1);
+    }
+  });
+
+  const handleAbort = async () => {
+    setIsAborting(true);
+    try {
+      if (claimId) {
+        await api.abortClaim(claimId);
+      }
+      showToast('Broadcast cancelled. CRDT lease released.');
+      setTimeout(() => {
+        onCancelBroadcast();
+      }, 500);
+    } catch (err: any) {
+      showToast(`Failed to abort: ${err.message}`);
+      setIsAborting(false);
+    }
+  };
 
   const formatTime = (secs: number) => {
     const m = Math.floor(secs / 60);
@@ -48,14 +95,27 @@ export const HelpScreenStep3: React.FC<HelpScreenStep3Props> = ({
     return `${m}:${s < 10 ? '0' : ''}${s}`;
   };
 
+  const isAccepted = dispatchStatus === 'ACCEPTED' || dispatchStatus === 'EN_ROUTE' || dispatchStatus === 'ARRIVED';
+  const isResolved = dispatchStatus === 'RESOLVED';
+
   return (
     <div className="flex flex-col w-full pb-8 space-y-4 max-w-screen-sm mx-auto">
+      {/* Toast notification */}
+      {toastMessage && (
+        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 bg-[#1a1c1e] text-white px-4 py-2 rounded-full text-xs font-semibold shadow-lg flex items-center gap-2 animate-bounce">
+          <span className="material-symbols-outlined text-[16px] text-[#8ed6d7]">
+            info
+          </span>
+          {toastMessage}
+        </div>
+      )}
+
       {/* Progress & Context Header */}
       <div className="flex items-center justify-between pt-1">
         <div className="flex items-center gap-2">
-          <span className="w-3 h-3 rounded-full bg-[#1e6b47] animate-ping" />
+          <span className={`w-3 h-3 rounded-full ${isAccepted ? 'bg-[#1e6b47]' : 'bg-[#ba1a1a] animate-ping'}`} />
           <span className="text-[14px] font-bold text-[#1e6b47] uppercase tracking-wider">
-            Beacon Transmitting
+            {isResolved ? 'Request Resolved' : isAccepted ? 'Responder Assigned' : 'Beacon Active'}
           </span>
         </div>
         <div className="flex items-center gap-1.5 bg-[#eeeef0] px-3 py-1 rounded-full">
@@ -67,10 +127,10 @@ export const HelpScreenStep3: React.FC<HelpScreenStep3Props> = ({
       {/* Screen Heading */}
       <div className="space-y-1">
         <h2 className="text-[28px] leading-[36px] font-bold text-[#1a1c1e] tracking-tight">
-          Help request is broadcasting
+          {isAccepted ? 'Responder en route' : 'Help request is broadcasting'}
         </h2>
         <p className="text-[16px] text-[#3f4948]">
-          Hopping phone-to-phone via Bluetooth & Wi-Fi Direct. No cell service needed.
+          Hopping phone-to-phone via BLE & Wi-Fi Direct gossip. No internet or cellular required.
         </p>
       </div>
 
@@ -96,149 +156,73 @@ export const HelpScreenStep3: React.FC<HelpScreenStep3Props> = ({
           </div>
         </div>
 
-        {/* Multi-Hop Network Nodes Illustration */}
-        <div className="space-y-3 py-1">
-          <div className="flex items-center justify-between">
-            {/* Node 1: You */}
-            <div className="flex flex-col items-center text-center">
-              <div className="w-12 h-12 rounded-full bg-[#004546] text-white flex items-center justify-center shadow-md relative">
-                <span className="material-symbols-outlined text-[24px]">person</span>
-                <span className="absolute -bottom-1 bg-[#1e6b47] text-[10px] text-white font-bold px-1.5 rounded-full">
-                  You
-                </span>
-              </div>
-              <span className="text-[12px] font-bold text-[#1a1c1e] mt-1.5">Origin</span>
-            </div>
+        {/* Dispatch State Pipeline Card */}
+        <div className="p-3 bg-[#f3f3f6] rounded-xl space-y-2">
+          <div className="flex items-center justify-between text-xs font-bold text-[#3f4948] uppercase">
+            <span>M8 CRDT Auction State</span>
+            <span className="px-2 py-0.5 rounded bg-white text-[#004546] font-mono">
+              {dispatchStatus}
+            </span>
+          </div>
 
-            {/* Hop link 1 */}
-            <div className="flex-1 flex flex-col items-center px-1">
-              <div className="w-full h-1 bg-[#004546] rounded-full relative overflow-hidden">
-                <div className="absolute inset-0 bg-[#a6eff0] animate-pulse" />
-              </div>
-              <span className="text-[11px] font-mono text-[#3f4948] mt-0.5">14m · BLE</span>
+          <div className="grid grid-cols-4 gap-1 text-center text-xs font-semibold">
+            <div className={`p-1.5 rounded ${dispatchStatus === 'PROPOSED' ? 'bg-[#004546] text-white' : 'bg-[#e8e8ea] text-[#3f4948]'}`}>
+              1. Proposed
             </div>
-
-            {/* Node 2: Neighbor 1 */}
-            <div className="flex flex-col items-center text-center">
-              <div className="w-12 h-12 rounded-full bg-[#e8e8ea] text-[#004546] border-2 border-[#004546] flex items-center justify-center relative">
-                <span className="material-symbols-outlined text-[24px]">smartphone</span>
-                <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-[#1e6b47] border-2 border-white" />
-              </div>
-              <span className="text-[12px] font-semibold text-[#1a1c1e] mt-1.5">
-                Pixel 8
-              </span>
+            <div className={`p-1.5 rounded ${dispatchStatus === 'ACCEPTED' ? 'bg-[#1e6b47] text-white' : 'bg-[#e8e8ea] text-[#3f4948]'}`}>
+              2. Accepted
             </div>
-
-            {/* Hop link 2 */}
-            <div className="flex-1 flex flex-col items-center px-1">
-              <div
-                className={`w-full h-1 rounded-full transition-all ${
-                  hops >= 2 ? 'bg-[#004546]' : 'bg-[#e8e8ea]'
-                }`}
-              />
-              <span className="text-[11px] font-mono text-[#3f4948] mt-0.5">38m · P2P</span>
+            <div className={`p-1.5 rounded ${dispatchStatus === 'EN_ROUTE' ? 'bg-[#1e6b47] text-white' : 'bg-[#e8e8ea] text-[#3f4948]'}`}>
+              3. En Route
             </div>
-
-            {/* Node 3: Relief Post / Helper */}
-            <div className="flex flex-col items-center text-center">
-              <div
-                className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
-                  acknowledged
-                    ? 'bg-[#1e6b47] text-white shadow-lg'
-                    : 'bg-[#e8e8ea] text-[#3f4948]'
-                }`}
-              >
-                <span className="material-symbols-outlined text-[24px]">
-                  {acknowledged ? 'medical_services' : 'share_location'}
-                </span>
-              </div>
-              <span className="text-[12px] font-semibold text-[#1a1c1e] mt-1.5">
-                {acknowledged ? 'Aid Team' : 'Relay Hub'}
-              </span>
+            <div className={`p-1.5 rounded ${dispatchStatus === 'RESOLVED' ? 'bg-[#1e6b47] text-white' : 'bg-[#e8e8ea] text-[#3f4948]'}`}>
+              4. Resolved
             </div>
           </div>
         </div>
 
-        {/* Live Status Message Card */}
-        {acknowledged ? (
-          <div className="bg-[#f0fdf4] border border-[#bbf7d0] rounded-xl p-3 flex items-start gap-3">
-            <span className="material-symbols-outlined text-[#1e6b47] text-[24px] mt-0.5 shrink-0">
-              check_circle
-            </span>
-            <div>
-              <h4 className="text-[16px] font-bold text-[#14532d]">
-                Community Responder Acknowledged
-              </h4>
-              <p className="text-[14px] text-[#166534]">
-                Dr. Sanjay Sharma & Shivaji Volunteer Group received your request for{' '}
-                <strong>{parsed.need} ({parsed.quantity})</strong>. They are approximately
-                320m away and preparing dispatch.
-              </p>
+        {/* Claim summary */}
+        <div className="p-3 bg-white border border-[#e8e8ea] rounded-xl space-y-1">
+          <div className="text-xs font-bold text-[#3f4948] uppercase">Broadcast Content</div>
+          <p className="text-[15px] font-medium text-[#1a1c1e] italic">"{rawText}"</p>
+          {claimId && (
+            <div className="text-xs font-mono text-[#3f4948] pt-1">
+              Signed Wire ID: {claimId}
             </div>
-          </div>
-        ) : (
-          <div className="bg-[#fef3c7] border border-[#b36b00]/30 rounded-xl p-3 flex items-start gap-3">
-            <span className="material-symbols-outlined text-[#b36b00] text-[22px] mt-0.5 shrink-0 animate-spin">
-              sync
-            </span>
-            <div>
-              <h4 className="text-[15px] font-bold text-[#b36b00]">
-                Hopping to Community Network...
-              </h4>
-              <p className="text-[13px] text-[#78350f]">
-                Relaying packet across Shivaji Nagar cluster. Keep device powered on.
-              </p>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Broadcast Summary Card */}
-      <div className="bg-white rounded-2xl p-4 border border-[#e8e8ea] space-y-3">
-        <h3 className="text-[16px] font-bold text-[#1a1c1e]">Your Broadcast Details</h3>
-        <div className="bg-[#f3f3f6] p-3 rounded-xl text-[15px] text-[#1a1c1e] italic font-serif">
-          "{rawText}"
-        </div>
-
-        <div className="grid grid-cols-2 gap-2 text-[14px]">
-          <div className="bg-[#eeeef0] p-2.5 rounded-lg">
-            <span className="text-[11px] font-bold text-[#3f4948] block">NEED</span>
-            <span className="font-bold text-[#004546]">{parsed.need}</span>
-          </div>
-          <div className="bg-[#eeeef0] p-2.5 rounded-lg">
-            <span className="text-[11px] font-bold text-[#3f4948] block">QUANTITY</span>
-            <span className="font-bold text-[#004546]">{parsed.quantity}</span>
-          </div>
-          <div className="bg-[#eeeef0] p-2.5 rounded-lg">
-            <span className="text-[11px] font-bold text-[#3f4948] block">FOR</span>
-            <span className="font-bold text-[#004546]">{parsed.person}</span>
-          </div>
-          <div className="bg-[#eeeef0] p-2.5 rounded-lg">
-            <span className="text-[11px] font-bold text-[#3f4948] block">LOCATION</span>
-            <span className="font-bold text-[#004546]">{parsed.near}</span>
-          </div>
+          )}
         </div>
       </div>
 
-      {/* Action Buttons: New or Abort Broadcast */}
-      <div className="space-y-3 pt-2">
+      {/* Action Buttons */}
+      <div className="space-y-2 pt-2">
+        <button
+          type="button"
+          onClick={handleAbort}
+          disabled={isAborting}
+          className="w-full min-h-[64px] bg-[#ba1a1a] text-white rounded-2xl flex items-center justify-center gap-2 px-4 shadow-md hover:bg-[#93000a] active:scale-[0.99] transition-all disabled:opacity-70"
+        >
+          {isAborting ? (
+            <>
+              <span className="material-symbols-outlined animate-spin text-[24px]">
+                progress_activity
+              </span>
+              <span className="text-[18px] font-bold">Cancelling lease...</span>
+            </>
+          ) : (
+            <>
+              <span className="material-symbols-outlined text-[24px]">cancel</span>
+              <span className="text-[18px] font-bold">Abort Broadcast</span>
+            </>
+          )}
+        </button>
+
         <button
           type="button"
           onClick={onNewRequest}
-          className="w-full min-h-[56px] bg-[#004546] text-white rounded-2xl flex items-center justify-center gap-2 text-[18px] font-bold hover:bg-[#005f60] transition-colors"
+          className="w-full min-h-[56px] bg-[#e8e8ea] text-[#1a1c1e] rounded-2xl flex items-center justify-center gap-2 px-4 hover:bg-[#eeeef0] active:scale-[0.99] transition-all"
         >
-          <span className="material-symbols-outlined text-[22px]">add</span>
-          <span>Create another help request</span>
-        </button>
-
-        {/* Abort / Critical Action button as specified in Image_27_8d76987a.markdown */}
-        <button
-          type="button"
-          onClick={onCancelBroadcast}
-          className="w-full min-h-[64px] bg-[#9e2a2b] text-white rounded-2xl flex items-center justify-center gap-2 px-4 shadow-md hover:bg-[#7d1017] active:scale-[0.99] transition-all"
-        >
-          <span className="material-symbols-outlined text-[24px]">close</span>
-          <span className="text-[18px] font-bold">Abort distress broadcast</span>
+          <span className="material-symbols-outlined text-[20px]">add</span>
+          <span className="text-[16px] font-bold">Submit Another Request</span>
         </button>
       </div>
     </div>

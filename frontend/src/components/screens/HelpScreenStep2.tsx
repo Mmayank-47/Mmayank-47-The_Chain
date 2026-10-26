@@ -1,12 +1,20 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { ParsedSituation } from '../../types';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { api } from '../../api/client';
+import { ClaimAnalysisResponse, Language, ParsedSituation } from '../../types';
 
 interface HelpScreenStep2Props {
+  currentLanguage?: Language;
   onBack: () => void;
-  onSendHelpRequest: (rawText: string, parsed: ParsedSituation) => void;
+  onSendHelpRequest: (
+    rawText: string,
+    parsed: ParsedSituation,
+    claimId?: string,
+    analysis?: ClaimAnalysisResponse
+  ) => void;
 }
 
 export const HelpScreenStep2: React.FC<HelpScreenStep2Props> = ({
+  currentLanguage = 'EN',
   onBack,
   onSendHelpRequest,
 }) => {
@@ -14,16 +22,26 @@ export const HelpScreenStep2: React.FC<HelpScreenStep2Props> = ({
     'Mother needs bp medicine, Shivaji Nagar Lane 4'
   );
   const [isListening, setIsListening] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isBroadcasting, setIsBroadcasting] = useState(false);
   const [broadcastSuccess, setBroadcastSuccess] = useState(false);
 
-  // Parsed situation fields
+  // Analysis result from real backend
+  const [analysis, setAnalysis] = useState<ClaimAnalysisResponse | null>(null);
+
+  // Parsed situation fields (synced with backend analysis)
   const [parsed, setParsed] = useState<ParsedSituation>({
-    need: 'medicine',
+    kind: 'claim',
+    capability_tags: ['medic'],
+    features: ['severe_bleeding'],
     quantity: '2 strips',
-    person: 'elderly',
-    near: 'Shivaji Nagar',
+    location_text: 'Shivaji Nagar Lane 4',
     language: 'Hindi',
+    confidence: 0.85,
+    urgency: 0.72,
+    need: 'medicine',
+    person: 'elderly',
+    near: 'Shivaji Nagar Lane 4',
   });
 
   // Modal for editing parsed chip
@@ -36,7 +54,44 @@ export const HelpScreenStep2: React.FC<HelpScreenStep2Props> = ({
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Simulated voice recognition or browser speech recognition
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 2500);
+  };
+
+  // Debounced backend claim analysis via M2..M10 chain
+  const analyzeText = useCallback(
+    async (text: string) => {
+      if (!text.trim() || text.length < 3) return;
+      setIsAnalyzing(true);
+      try {
+        const langCode = currentLanguage.toLowerCase();
+        const res = await api.analyzeClaim(text, langCode);
+        setAnalysis(res);
+        setParsed({
+          ...res.parsed,
+          need: res.parsed.capability_tags?.[0] || 'general aid',
+          person: res.parsed.features?.[0] || 'individual',
+          near: res.parsed.location_text || 'Nearby cell',
+        });
+      } catch (err: any) {
+        console.error('Failed to analyze claim:', err);
+      } finally {
+        setIsAnalyzing(false);
+      }
+    },
+    [currentLanguage]
+  );
+
+  // Trigger analysis when text or language changes (debounced by 400ms)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      analyzeText(situationText);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [situationText, analyzeText]);
+
+  // Real Web Speech API
   useEffect(() => {
     let recognition: any = null;
     const SpeechRecognition =
@@ -47,7 +102,8 @@ export const HelpScreenStep2: React.FC<HelpScreenStep2Props> = ({
         recognition = new SpeechRecognition();
         recognition.continuous = false;
         recognition.interimResults = true;
-        recognition.lang = 'en-IN';
+        recognition.lang =
+          currentLanguage === 'HI' ? 'hi-IN' : currentLanguage === 'MR' ? 'mr-IN' : 'en-IN';
 
         recognition.onresult = (event: any) => {
           const transcript = Array.from(event.results)
@@ -55,12 +111,13 @@ export const HelpScreenStep2: React.FC<HelpScreenStep2Props> = ({
             .join('');
           if (transcript) {
             setSituationText(transcript);
-            autoParseSituation(transcript);
           }
         };
 
-        recognition.onerror = () => {
-          simulateVoiceInput();
+        recognition.onerror = (e: any) => {
+          console.warn('Speech recognition error:', e);
+          setIsListening(false);
+          showToast('Speech recognition unavailable. Please type your situation.');
         };
 
         recognition.onend = () => {
@@ -68,11 +125,13 @@ export const HelpScreenStep2: React.FC<HelpScreenStep2Props> = ({
         };
 
         recognition.start();
-      } catch {
-        simulateVoiceInput();
+      } catch (err) {
+        setIsListening(false);
+        showToast('Speech recognition not supported in this browser.');
       }
-    } else if (isListening) {
-      simulateVoiceInput();
+    } else if (isListening && !SpeechRecognition) {
+      setIsListening(false);
+      showToast('Speech recognition is not supported in this browser.');
     }
 
     return () => {
@@ -82,76 +141,11 @@ export const HelpScreenStep2: React.FC<HelpScreenStep2Props> = ({
         } catch {}
       }
     };
-  }, [isListening]);
-
-  const simulateVoiceInput = () => {
-    const samples = [
-      'Need insulin and bp tablets for elderly grandfather near Shivaji Nagar Lane 3',
-      'Drinking water needed for 4 people, flood water entering ground floor',
-      'Baby formula required immediately, Sector 2 near Shivaji temple',
-    ];
-    const timer = setTimeout(() => {
-      const chosen = samples[Math.floor(Math.random() * samples.length)];
-      setSituationText(chosen);
-      autoParseSituation(chosen);
-      setIsListening(false);
-      showToast('Voice transcribed & parsed offline');
-    }, 2400);
-
-    return () => clearTimeout(timer);
-  };
-
-  const autoParseSituation = (text: string) => {
-    const lower = text.toLowerCase();
-    let newNeed = 'medicine';
-    let newQty = '2 strips';
-    let newPerson = 'elderly';
-    let newNear = 'Shivaji Nagar';
-    let newLang = 'Hindi';
-
-    if (lower.includes('water')) {
-      newNeed = 'drinking water';
-      newQty = '5 litres';
-    } else if (lower.includes('insulin')) {
-      newNeed = 'insulin & bp medicine';
-      newQty = '1 vial + 1 strip';
-    } else if (lower.includes('rescue') || lower.includes('flood')) {
-      newNeed = 'rescue boat / evacuation';
-      newQty = '4 persons';
-    } else if (lower.includes('baby') || lower.includes('infant')) {
-      newNeed = 'baby formula & diapers';
-      newQty = '1 pack';
-      newPerson = 'infant';
-    }
-
-    if (lower.includes('grandfather') || lower.includes('mother') || lower.includes('elderly')) {
-      newPerson = 'elderly';
-    }
-
-    if (lower.includes('lane 3')) {
-      newNear = 'Shivaji Nagar Lane 3';
-    } else if (lower.includes('lane 4')) {
-      newNear = 'Shivaji Nagar Lane 4';
-    } else if (lower.includes('sector 2')) {
-      newNear = 'Shivaji Sector 2';
-    }
-
-    setParsed({
-      need: newNeed,
-      quantity: newQty,
-      person: newPerson,
-      near: newNear,
-      language: newLang,
-    });
-  };
-
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 2500);
-  };
+  }, [isListening, currentLanguage]);
 
   const handleClear = () => {
     setSituationText('');
+    setAnalysis(null);
     if (textareaRef.current) {
       textareaRef.current.focus();
     }
@@ -167,20 +161,35 @@ export const HelpScreenStep2: React.FC<HelpScreenStep2Props> = ({
     setEditingField(null);
   };
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!situationText.trim()) {
       showToast('Please enter your situation details');
       return;
     }
-    setIsBroadcasting(true);
 
-    setTimeout(() => {
+    setIsBroadcasting(true);
+    try {
+      let claimId = analysis?.claim_id;
+      if (!claimId) {
+        const langCode = currentLanguage.toLowerCase();
+        const res = await api.analyzeClaim(situationText, langCode);
+        claimId = res.claim_id;
+        setAnalysis(res);
+      }
+
+      // Broadcast onto local CRDT log & gossip transport
+      await api.broadcastClaim(claimId);
+
       setIsBroadcasting(false);
       setBroadcastSuccess(true);
+
       setTimeout(() => {
-        onSendHelpRequest(situationText, parsed);
-      }, 700);
-    }, 1200);
+        onSendHelpRequest(situationText, parsed, claimId, analysis || undefined);
+      }, 500);
+    } catch (err: any) {
+      setIsBroadcasting(false);
+      showToast(`Broadcast failed: ${err.message || 'Network error'}`);
+    }
   };
 
   return (
@@ -189,7 +198,7 @@ export const HelpScreenStep2: React.FC<HelpScreenStep2Props> = ({
       {toastMessage && (
         <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 bg-[#1a1c1e] text-white px-4 py-2 rounded-full text-xs font-semibold shadow-lg flex items-center gap-2 animate-bounce">
           <span className="material-symbols-outlined text-[16px] text-[#8ed6d7]">
-            check_circle
+            info
           </span>
           {toastMessage}
         </div>
@@ -219,7 +228,7 @@ export const HelpScreenStep2: React.FC<HelpScreenStep2Props> = ({
           Describe your situation
         </h2>
         <p className="text-[16px] leading-[24px] text-[#3f4948]">
-          Type or speak plainly. Our mesh network parses details offline.
+          Type or speak plainly. Evaluated by on-device M2 parser and M3 verifier.
         </p>
       </div>
 
@@ -234,15 +243,18 @@ export const HelpScreenStep2: React.FC<HelpScreenStep2Props> = ({
             id="situation-input"
             rows={3}
             value={situationText}
-            onChange={(e) => {
-              setSituationText(e.target.value);
-              if (e.target.value.length > 10) {
-                autoParseSituation(e.target.value);
-              }
-            }}
-            placeholder="Tell us what you need, in any language"
+            onChange={(e) => setSituationText(e.target.value)}
+            placeholder="Tell us what you need, in English, Hindi, or Marathi"
             className="w-full bg-[#f3f3f6] rounded-xl p-4 text-[18px] leading-[26px] text-[#1a1c1e] placeholder:text-[#3f4948]/70 focus:outline-none focus:bg-[#eeeef0] resize-none border border-transparent focus:border-[#004546] transition-colors"
           />
+          {isAnalyzing && (
+            <div className="absolute right-3 bottom-3 flex items-center gap-1 text-xs text-[#004546] bg-white/90 px-2 py-0.5 rounded-full border border-[#e8e8ea]">
+              <span className="material-symbols-outlined text-[14px] animate-spin">
+                sync
+              </span>
+              <span>Evaluating...</span>
+            </div>
+          )}
         </div>
 
         {/* Voice Input Trigger & Clear button */}
@@ -293,20 +305,31 @@ export const HelpScreenStep2: React.FC<HelpScreenStep2Props> = ({
             >
               verified
             </span>
-            <h3 className="text-[20px] font-bold text-[#1a1c1e]">We understood</h3>
+            <h3 className="text-[20px] font-bold text-[#1a1c1e]">Parsed Claim</h3>
           </div>
-          <span className="text-[13px] font-semibold bg-[#eeeef0] px-2 py-0.5 rounded text-[#3f4948]">
-            Parsed
-          </span>
+          <div className="flex items-center gap-1.5">
+            {analysis && (
+              <span className="text-[12px] font-bold bg-[#a6eff0] text-[#002020] px-2 py-0.5 rounded-full font-mono">
+                p_valid: {Math.round(analysis.p_valid * 100)}%
+              </span>
+            )}
+            <span className="text-[13px] font-semibold bg-[#eeeef0] px-2 py-0.5 rounded text-[#3f4948]">
+              M2 Verified
+            </span>
+          </div>
         </div>
 
         {/* Editable Chips List */}
         <div className="flex flex-col gap-2.5">
-          {/* Chip 1: Need */}
+          {/* Chip 1: Need / Capability */}
           <button
             type="button"
             onClick={() =>
-              setEditingField({ key: 'need', label: 'Need', value: parsed.need })
+              setEditingField({
+                key: 'need',
+                label: 'Need',
+                value: parsed.need || parsed.capability_tags?.[0] || '',
+              })
             }
             className="flex items-center justify-between min-h-[56px] w-full px-4 py-2 rounded-xl bg-[#f3f3f6] text-left hover:bg-[#eeeef0] active:bg-[#e8e8ea] transition-colors border border-transparent hover:border-[#bec9c8]"
           >
@@ -315,7 +338,7 @@ export const HelpScreenStep2: React.FC<HelpScreenStep2Props> = ({
                 Need:
               </span>
               <span className="text-[18px] font-bold text-[#1a1c1e] truncate">
-                {parsed.need}
+                {parsed.need || parsed.capability_tags?.join(', ') || 'Assistance'}
               </span>
             </div>
             <div className="flex items-center gap-1 text-[#004546] shrink-0 ml-2">
@@ -330,7 +353,7 @@ export const HelpScreenStep2: React.FC<HelpScreenStep2Props> = ({
               setEditingField({
                 key: 'quantity',
                 label: 'Quantity',
-                value: parsed.quantity,
+                value: parsed.quantity || '',
               })
             }
             className="flex items-center justify-between min-h-[56px] w-full px-4 py-2 rounded-xl bg-[#f3f3f6] text-left hover:bg-[#eeeef0] active:bg-[#e8e8ea] transition-colors border border-transparent hover:border-[#bec9c8]"
@@ -340,7 +363,7 @@ export const HelpScreenStep2: React.FC<HelpScreenStep2Props> = ({
                 Quantity:
               </span>
               <span className="text-[18px] font-bold text-[#1a1c1e] truncate">
-                {parsed.quantity}
+                {parsed.quantity || '1 unit'}
               </span>
             </div>
             <div className="flex items-center gap-1 text-[#004546] shrink-0 ml-2">
@@ -348,66 +371,24 @@ export const HelpScreenStep2: React.FC<HelpScreenStep2Props> = ({
             </div>
           </button>
 
-          {/* Chip 3: Person */}
-          <button
-            type="button"
-            onClick={() =>
-              setEditingField({ key: 'person', label: 'Person', value: parsed.person })
-            }
-            className="flex items-center justify-between min-h-[56px] w-full px-4 py-2 rounded-xl bg-[#f3f3f6] text-left hover:bg-[#eeeef0] active:bg-[#e8e8ea] transition-colors border border-transparent hover:border-[#bec9c8]"
-          >
-            <div className="flex items-center gap-2 truncate">
-              <span className="text-[14px] font-semibold text-[#3f4948] min-w-[70px]">
-                Person:
-              </span>
-              <span className="text-[18px] font-bold text-[#1a1c1e] truncate">
-                {parsed.person}
-              </span>
-            </div>
-            <div className="flex items-center gap-1 text-[#004546] shrink-0 ml-2">
-              <span className="material-symbols-outlined text-[20px]">edit</span>
-            </div>
-          </button>
-
-          {/* Chip 4: Near */}
-          <button
-            type="button"
-            onClick={() =>
-              setEditingField({ key: 'near', label: 'Near', value: parsed.near })
-            }
-            className="flex items-center justify-between min-h-[56px] w-full px-4 py-2 rounded-xl bg-[#f3f3f6] text-left hover:bg-[#eeeef0] active:bg-[#e8e8ea] transition-colors border border-transparent hover:border-[#bec9c8]"
-          >
-            <div className="flex items-center gap-2 truncate">
-              <span className="text-[14px] font-semibold text-[#3f4948] min-w-[70px]">
-                Near:
-              </span>
-              <span className="text-[18px] font-bold text-[#1a1c1e] truncate">
-                {parsed.near}
-              </span>
-            </div>
-            <div className="flex items-center gap-1 text-[#004546] shrink-0 ml-2">
-              <span className="material-symbols-outlined text-[20px]">edit</span>
-            </div>
-          </button>
-
-          {/* Chip 5: Language */}
+          {/* Chip 3: Location / Near */}
           <button
             type="button"
             onClick={() =>
               setEditingField({
-                key: 'language',
-                label: 'Language',
-                value: parsed.language,
+                key: 'location_text',
+                label: 'Location',
+                value: parsed.location_text || parsed.near || '',
               })
             }
             className="flex items-center justify-between min-h-[56px] w-full px-4 py-2 rounded-xl bg-[#f3f3f6] text-left hover:bg-[#eeeef0] active:bg-[#e8e8ea] transition-colors border border-transparent hover:border-[#bec9c8]"
           >
             <div className="flex items-center gap-2 truncate">
               <span className="text-[14px] font-semibold text-[#3f4948] min-w-[70px]">
-                Language:
+                Location:
               </span>
               <span className="text-[18px] font-bold text-[#1a1c1e] truncate">
-                {parsed.language}
+                {parsed.location_text || parsed.near || 'Current mesh cell'}
               </span>
             </div>
             <div className="flex items-center gap-1 text-[#004546] shrink-0 ml-2">
@@ -416,10 +397,30 @@ export const HelpScreenStep2: React.FC<HelpScreenStep2Props> = ({
           </button>
         </div>
 
+        {/* Real Justification Preview from M10 */}
+        {analysis?.justification && (
+          <div className="p-3 bg-[#e8f5e9] border border-[#a5d6a7] rounded-xl space-y-1">
+            <div className="flex items-center justify-between text-xs font-bold text-[#2e7d32]">
+              <span className="uppercase">M10 Dispatch Rationale</span>
+              <span className="px-2 py-0.5 rounded bg-white font-mono">
+                Risk: {analysis.justification.risk.toUpperCase()}
+              </span>
+            </div>
+            <p className="text-[14px] text-[#1b5e20] leading-snug">
+              {analysis.justification.text}
+            </p>
+            {analysis.justification.abort && (
+              <p className="text-[12px] text-[#b71c1c] font-semibold">
+                ⚠️ Abort Criterion: {analysis.justification.abort}
+              </p>
+            )}
+          </div>
+        )}
+
         {/* Gentle reassurance line */}
         <div className="flex items-center gap-2 pt-1 text-[#3f4948]">
           <span className="material-symbols-outlined text-[18px]">info</span>
-          <p className="text-[16px]">Correct? You can change anything.</p>
+          <p className="text-[15px]">Tap any chip to edit before broadcasting.</p>
         </div>
       </div>
 
@@ -432,10 +433,10 @@ export const HelpScreenStep2: React.FC<HelpScreenStep2Props> = ({
         </div>
         <div className="space-y-0.5">
           <h4 className="text-[18px] font-bold text-[#1a1c1e]">
-            Location privacy active
+            M9 Two-Stage Privacy Active
           </h4>
-          <p className="text-[16px] text-[#3f4948] leading-snug">
-            Only a rough area is shared until a helper accepts.
+          <p className="text-[15px] text-[#3f4948] leading-snug">
+            Only a coarse cell is visible to the network. Exact coordinates remain sealed until a responder accepts.
           </p>
         </div>
       </div>
@@ -459,11 +460,11 @@ export const HelpScreenStep2: React.FC<HelpScreenStep2Props> = ({
           ) : broadcastSuccess ? (
             <>
               <span className="material-symbols-outlined text-[26px]">check_circle</span>
-              <span className="text-[20px] font-bold">Request broadcasted</span>
+              <span className="text-[20px] font-bold">Beacon broadcasted!</span>
             </>
           ) : (
             <>
-              <span className="text-[20px] font-bold">Send help request</span>
+              <span className="text-[20px] font-bold">Broadcast Distress Beacon</span>
               <span className="material-symbols-outlined text-[26px]">cell_tower</span>
             </>
           )}
@@ -474,7 +475,7 @@ export const HelpScreenStep2: React.FC<HelpScreenStep2Props> = ({
             hub
           </span>
           <p className="text-[14px] font-semibold text-center">
-            Relays across nearby phones instantly without internet
+            Signed with hardware key & broadcasted peer-to-peer via Bluetooth & Wi-Fi
           </p>
         </div>
       </div>

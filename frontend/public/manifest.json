@@ -1,0 +1,18 @@
+{
+  "name": "The Chain - Offline Emergency Mesh",
+  "short_name": "The Chain",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f9f9fc",
+  "theme_color": "#004546",
+  "description": "Decentralized offline emergency mesh network for disaster relief.",
+  "icons": [
+    {
+      "src": "/vite.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

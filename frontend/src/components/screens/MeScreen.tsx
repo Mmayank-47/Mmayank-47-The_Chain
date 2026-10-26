@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { Language } from '../../types';
+import React, { useState, useEffect } from 'react';
+import { api } from '../../api/client';
+import { EmergencyProfile, Language } from '../../types';
 
 interface MeScreenProps {
   currentLanguage: Language;
@@ -10,16 +11,58 @@ export const MeScreen: React.FC<MeScreenProps> = ({
   currentLanguage,
   onLanguageChange,
 }) => {
-  const [bloodGroup, setBloodGroup] = useState('O+ (Positive)');
-  const [allergies, setAllergies] = useState('Penicillin, Sulfa drugs');
-  const [conditions, setConditions] = useState('Hypertension (BP), Diabetic');
-  const [emergencyPhone, setEmergencyPhone] = useState('+91 98201 54321 (Daughter Anita)');
-  const [lowPowerMode, setLowPowerMode] = useState(false);
-  const [savedToast, setSavedToast] = useState(false);
+  const [profile, setProfile] = useState<EmergencyProfile>({
+    fullName: 'Suman Kulkarni',
+    phoneMeshId: 'node-me',
+    bloodGroup: 'O+ (Positive)',
+    chronicConditions: ['Hypertension (BP)', 'Diabetic'],
+    emergencyContact: '+91 98201 54321',
+    lowBatterySaver: false,
+  });
 
-  const handleSave = () => {
-    setSavedToast(true);
-    setTimeout(() => setSavedToast(false), 2000);
+  const [fullName, setFullName] = useState(profile.fullName);
+  const [bloodGroup, setBloodGroup] = useState(profile.bloodGroup);
+  const [conditions, setConditions] = useState(profile.chronicConditions.join(', '));
+  const [emergencyPhone, setEmergencyPhone] = useState(profile.emergencyContact);
+  const [lowPowerMode, setLowPowerMode] = useState(profile.lowBatterySaver);
+  const [savedToast, setSavedToast] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const data = await api.getProfile();
+        setProfile(data);
+        setFullName(data.fullName);
+        setBloodGroup(data.bloodGroup);
+        setConditions(data.chronicConditions.join(', '));
+        setEmergencyPhone(data.emergencyContact);
+        setLowPowerMode(data.lowBatterySaver);
+      } catch (err) {
+        console.error('Failed to load profile:', err);
+      }
+    };
+    fetchProfile();
+  }, []);
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      const updated = await api.updateProfile({
+        fullName,
+        bloodGroup,
+        chronicConditions: conditions.split(',').map((s) => s.trim()).filter(Boolean),
+        emergencyContact: emergencyPhone,
+        lowBatterySaver: lowPowerMode,
+      });
+      setProfile(updated);
+      setSavedToast(true);
+      setTimeout(() => setSavedToast(false), 2500);
+    } catch (err: any) {
+      alert(`Save error: ${err.message}`);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -42,7 +85,7 @@ export const MeScreen: React.FC<MeScreenProps> = ({
       {savedToast && (
         <div className="bg-[#1e6b47] text-white p-3 rounded-xl text-center font-bold text-[14px] flex items-center justify-center gap-2">
           <span className="material-symbols-outlined text-[18px]">check</span>
-          <span>Emergency Profile Updated Locally</span>
+          <span>Emergency Profile Persisted via NodePersistence</span>
         </div>
       )}
 
@@ -50,24 +93,27 @@ export const MeScreen: React.FC<MeScreenProps> = ({
       <div className="bg-white rounded-2xl p-4 border border-[#e8e8ea] shadow-sm space-y-3">
         <div className="flex items-center gap-3">
           <div className="w-14 h-14 rounded-full bg-[#004546] text-white flex items-center justify-center text-[22px] font-bold">
-            SK
+            {fullName
+              .split(' ')
+              .map((n) => n[0])
+              .join('')
+              .slice(0, 2)
+              .toUpperCase()}
           </div>
           <div>
-            <h3 className="text-[18px] font-bold text-[#1a1c1e]">
-              Suman Kulkarni
-            </h3>
+            <h3 className="text-[18px] font-bold text-[#1a1c1e]">{fullName}</h3>
             <span className="text-[12px] font-mono text-[#3f4948] block">
-              Node ID: MESH-IN-MH-7092A
+              Node ID: {profile.phoneMeshId || 'node-me'}
             </span>
           </div>
         </div>
 
-        {/* Offline Cryptographic Signature */}
+        {/* Cryptographic Key Security Badge */}
         <div className="p-3 bg-[#f3f3f6] rounded-xl text-[12px] text-[#3f4948] font-mono flex items-center justify-between">
-          <span>ECDSA Mesh Key: 0x4B9F...8E21</span>
+          <span>Hardware Fleet Key: M1 DevProvider</span>
           <span className="text-[#1e6b47] font-bold flex items-center gap-1">
             <span className="material-symbols-outlined text-[16px]">verified</span>
-            Verified
+            Enrolled
           </span>
         </div>
       </div>
@@ -84,7 +130,19 @@ export const MeScreen: React.FC<MeScreenProps> = ({
           <span className="text-[12px] text-[#3f4948]">Editable</span>
         </div>
 
-        <div className="space-y-2.5">
+        <div className="space-y-3">
+          <div>
+            <label className="text-[12px] font-bold text-[#3f4948] uppercase">
+              Full Name
+            </label>
+            <input
+              type="text"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              className="w-full bg-[#f3f3f6] border border-[#bec9c8] rounded-xl p-3 text-[15px] font-bold text-[#1a1c1e] mt-1"
+            />
+          </div>
+
           <div>
             <label className="text-[12px] font-bold text-[#3f4948] uppercase">
               Blood Group
@@ -99,104 +157,91 @@ export const MeScreen: React.FC<MeScreenProps> = ({
 
           <div>
             <label className="text-[12px] font-bold text-[#3f4948] uppercase">
-              Allergies
-            </label>
-            <input
-              type="text"
-              value={allergies}
-              onChange={(e) => setAllergies(e.target.value)}
-              className="w-full bg-[#f3f3f6] border border-[#bec9c8] rounded-xl p-3 text-[15px] text-[#1a1c1e] mt-1"
-            />
-          </div>
-
-          <div>
-            <label className="text-[12px] font-bold text-[#3f4948] uppercase">
-              Chronic Conditions & Routine Medications
+              Chronic Conditions & Allergies
             </label>
             <input
               type="text"
               value={conditions}
               onChange={(e) => setConditions(e.target.value)}
-              className="w-full bg-[#f3f3f6] border border-[#bec9c8] rounded-xl p-3 text-[15px] text-[#1a1c1e] mt-1"
+              className="w-full bg-[#f3f3f6] border border-[#bec9c8] rounded-xl p-3 text-[15px] text-[#1a1c1e] mt-1 font-medium"
             />
           </div>
 
           <div>
             <label className="text-[12px] font-bold text-[#3f4948] uppercase">
-              Emergency Contact (ICE)
+              Emergency Contact Phone
             </label>
             <input
               type="text"
               value={emergencyPhone}
               onChange={(e) => setEmergencyPhone(e.target.value)}
-              className="w-full bg-[#f3f3f6] border border-[#bec9c8] rounded-xl p-3 text-[15px] text-[#1a1c1e] mt-1"
+              className="w-full bg-[#f3f3f6] border border-[#bec9c8] rounded-xl p-3 text-[15px] text-[#1a1c1e] mt-1 font-medium"
+            />
+          </div>
+
+          {/* Battery Saver Toggle */}
+          <div className="flex items-center justify-between p-3 rounded-xl bg-[#f3f3f6] mt-2">
+            <div className="space-y-0.5">
+              <span className="text-[14px] font-bold text-[#1a1c1e] block">
+                Aggressive Battery Conservation
+              </span>
+              <span className="text-[12px] text-[#3f4948] block">
+                Adjust beacon interval dynamically based on M6 battery drain model.
+              </span>
+            </div>
+            <input
+              type="checkbox"
+              checked={lowPowerMode}
+              onChange={(e) => setLowPowerMode(e.target.checked)}
+              className="w-5 h-5 accent-[#004546] rounded"
             />
           </div>
         </div>
 
+        {/* Save Button */}
         <button
           type="button"
           onClick={handleSave}
-          className="w-full py-3 bg-[#004546] text-white rounded-xl text-[16px] font-bold hover:bg-[#005f60] transition-colors"
+          disabled={isSaving}
+          className="w-full min-h-[56px] bg-[#004546] text-white rounded-xl font-bold text-[16px] hover:bg-[#005f60] active:scale-[0.99] transition-all flex items-center justify-center gap-2 mt-4"
         >
-          Save Emergency Card
+          {isSaving ? (
+            <>
+              <span className="material-symbols-outlined animate-spin text-[20px]">
+                sync
+              </span>
+              <span>Saving to device...</span>
+            </>
+          ) : (
+            <>
+              <span className="material-symbols-outlined text-[20px]">save</span>
+              <span>Save Emergency Profile</span>
+            </>
+          )}
         </button>
       </div>
 
-      {/* Device & Radio Power Settings */}
-      <div className="bg-white rounded-2xl p-4 border border-[#e8e8ea] shadow-sm space-y-3">
-        <h3 className="text-[16px] font-bold text-[#1a1c1e]">
-          Emergency Radio & Power Mode
-        </h3>
-
-        <div className="flex items-center justify-between py-1">
-          <div>
-            <h4 className="text-[15px] font-bold text-[#1a1c1e]">
-              Ultra Low-Battery Mesh Throttling
-            </h4>
-            <p className="text-[13px] text-[#3f4948]">
-              Limits background relay checks to save phone battery during floods.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setLowPowerMode(!lowPowerMode)}
-            className={`w-14 h-8 rounded-full transition-colors relative p-1 ${
-              lowPowerMode ? 'bg-[#004546]' : 'bg-[#e2e2e5]'
-            }`}
-          >
-            <div
-              className={`w-6 h-6 rounded-full bg-white transition-transform ${
-                lowPowerMode ? 'translate-x-6' : 'translate-x-0'
+      {/* Language Switch Section */}
+      <div className="bg-white rounded-2xl p-4 border border-[#e8e8ea] shadow-sm space-y-2">
+        <h3 className="text-[16px] font-bold text-[#1a1c1e]">Interface & Evaluation Language</h3>
+        <p className="text-[13px] text-[#3f4948]">
+          Drives backend M2 parser and M10 natural-language justification generation.
+        </p>
+        <div className="grid grid-cols-3 gap-2 pt-1">
+          {(['EN', 'HI', 'MR'] as Language[]).map((lang) => (
+            <button
+              key={lang}
+              type="button"
+              onClick={() => onLanguageChange(lang)}
+              className={`p-3 rounded-xl font-bold text-[14px] transition-colors ${
+                currentLanguage === lang
+                  ? 'bg-[#004546] text-white shadow-sm'
+                  : 'bg-[#e8e8ea] text-[#3f4948] hover:bg-[#eeeef0]'
               }`}
-            />
-          </button>
-        </div>
-
-        <div className="pt-2 border-t border-[#eeeef0]">
-          <label className="text-[13px] font-bold text-[#3f4948] block mb-2">
-            Language / भाषा / भाषा
-          </label>
-          <div className="grid grid-cols-3 gap-2">
-            {[
-              { code: 'EN', name: 'English' },
-              { code: 'HI', name: 'हिन्दी' },
-              { code: 'MR', name: 'मराठी' },
-            ].map((lang) => (
-              <button
-                key={lang.code}
-                type="button"
-                onClick={() => onLanguageChange(lang.code as Language)}
-                className={`py-2 rounded-xl text-[14px] font-bold border transition-colors ${
-                  currentLanguage === lang.code
-                    ? 'border-[#004546] bg-[#a6eff0] text-[#002020]'
-                    : 'border-[#bec9c8] bg-white text-[#3f4948]'
-                }`}
-              >
-                {lang.name}
-              </button>
-            ))}
-          </div>
+            >
+              {lang === 'EN' ? 'English' : lang === 'HI' ? 'हिंदी (Hindi)' : 'मराठी (Marathi)'}
+            </button>
+          ))}
         </div>
       </div>
     </div>

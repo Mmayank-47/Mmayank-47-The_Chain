@@ -44,7 +44,7 @@ class NodePersistence:
         if hasattr(phone, "guard") and phone.guard is not None:
             if hasattr(phone.guard, "_replay_windows"):
                 for nid, win in phone.guard._replay_windows.items():
-                    replay_seqs[nid] = {"max_seq": win.max_seq, "bitmap": win.bitmap}
+                    replay_seqs[nid] = {"max_seq": win.max_seq, "seen": list(getattr(win, "_seen", set()))}
 
         return {
             "node_id": phone.id,
@@ -108,7 +108,10 @@ class NodePersistence:
             if hasattr(phone.guard, "_replay_windows"):
                 for nid, win_data in replay_seqs.items():
                     win = phone.guard.get_replay_window(nid)
-                    win.max_seq = win_data["max_seq"]
-                    win.bitmap = win_data["bitmap"]
+                    win.max_seq = win_data.get("max_seq", 0)
+                    if "seen" in win_data:
+                        win._seen = set(win_data["seen"])
+                    elif "_seen" in win_data:
+                        win._seen = set(win_data["_seen"])
 
         return True

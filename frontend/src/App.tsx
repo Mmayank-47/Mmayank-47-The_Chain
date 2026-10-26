@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Header } from './components/Header';
 import { BottomNav, TabKey } from './components/BottomNav';
 import { HelpScreenStep1 } from './components/screens/HelpScreenStep1';
@@ -11,50 +11,95 @@ import { MeScreen } from './components/screens/MeScreen';
 import { AndroidPhoneFrame } from './components/AndroidPhoneFrame';
 import { ComposeInspector } from './components/ComposeInspector';
 import { TopStudioBar, ViewMode } from './components/TopStudioBar';
-import { Language, ParsedSituation } from './types';
+import { ClaimAnalysisResponse, Language, ParsedSituation } from './types';
+import { api } from './api/client';
+import { useMeshEvents } from './api/events';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<TabKey>('help');
-  const [helpStep, setHelpStep] = useState<1 | 2 | 3>(2); // Step 2 is the exact screenshot screen
+  const [helpStep, setHelpStep] = useState<1 | 2 | 3>(2);
   const [viewMode, setViewMode] = useState<ViewMode>('phone');
   const [language, setLanguage] = useState<Language>('EN');
-  const [batteryPercent] = useState<number>(62);
+  const [batteryPercent, setBatteryPercent] = useState<number>(95);
   const [peerCount, setPeerCount] = useState<number>(4);
 
-  const [currentSituation, setCurrentSituation] = useState({
+  const [currentClaim, setCurrentClaim] = useState<{
+    claimId?: string;
+    rawText: string;
+    parsed: ParsedSituation;
+    analysis?: ClaimAnalysisResponse;
+  }>({
     rawText: 'Mother needs bp medicine, Shivaji Nagar Lane 4',
     parsed: {
       need: 'medicine',
       quantity: '2 strips',
       person: 'elderly',
-      near: 'Shivaji Nagar',
+      near: 'Shivaji Nagar Lane 4',
       language: 'Hindi',
-    } as ParsedSituation,
+    },
   });
 
   const [notification, setNotification] = useState<string | null>(null);
 
   const showNotification = (msg: string) => {
     setNotification(msg);
-    setTimeout(() => setNotification(null), 3000);
+    setTimeout(() => setNotification(null), 3500);
   };
 
+  // Sync real telemetry from backend
+  const refreshTelemetry = async () => {
+    try {
+      const mesh = await api.getMesh();
+      setBatteryPercent(Math.round(mesh.battery * 100));
+      setPeerCount(mesh.neighbors.length);
+    } catch {
+      // Mesh offline or connecting
+    }
+  };
+
+  useEffect(() => {
+    refreshTelemetry();
+    const interval = setInterval(refreshTelemetry, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Listen to live SSE mesh events
+  useMeshEvents((ev) => {
+    if (ev.type === 'neighbor_up') {
+      showNotification(`Mesh peer connected: ${ev.data.node_id} (Wi-Fi Direct / BLE)`);
+      refreshTelemetry();
+    } else if (ev.type === 'neighbor_down') {
+      showNotification(`Mesh peer disconnected: ${ev.data.node_id}`);
+      refreshTelemetry();
+    } else if (ev.type === 'claim_opened') {
+      showNotification(`New claim opened: ${ev.data.claim_id} (Cell ${ev.data.cell})`);
+    } else if (ev.type === 'partition_healed') {
+      showNotification('Network partition healed! Reconciling event logs via anti-entropy.');
+      refreshTelemetry();
+    }
+  });
+
   const handleSimulateMeshHop = () => {
-    setPeerCount((prev) => (prev >= 6 ? 4 : prev + 1));
-    showNotification('Discovered new peer: Redmi 12 (+1 mesh node connected via BLE)');
+    refreshTelemetry();
+    showNotification('Diagnostic ping dispatched across mesh');
   };
 
   const handleSelectNeedCategory = (_cat: string, defaultPrompt: string) => {
-    setCurrentSituation((prev) => ({
+    setCurrentClaim((prev) => ({
       ...prev,
       rawText: defaultPrompt,
     }));
   };
 
-  const handleSendHelpRequest = (rawText: string, parsed: ParsedSituation) => {
-    setCurrentSituation({ rawText, parsed });
-    setHelpStep(3); // Advance to Step 3 active broadcast
-    showNotification('Distress beacon relayed to 4 neighboring phones');
+  const handleSendHelpRequest = (
+    rawText: string,
+    parsed: ParsedSituation,
+    claimId?: string,
+    analysis?: ClaimAnalysisResponse
+  ) => {
+    setCurrentClaim({ rawText, parsed, claimId, analysis });
+    setHelpStep(3);
+    showNotification(`Distress beacon ${claimId || ''} relayed to neighboring phones`);
   };
 
   // Section title mapping for header
@@ -89,6 +134,7 @@ export default function App() {
       if (helpStep === 2) {
         return (
           <HelpScreenStep2
+            currentLanguage={language}
             onBack={() => setHelpStep(1)}
             onSendHelpRequest={handleSendHelpRequest}
           />
@@ -96,8 +142,9 @@ export default function App() {
       }
       return (
         <HelpScreenStep3
-          rawText={currentSituation.rawText}
-          parsed={currentSituation.parsed}
+          rawText={currentClaim.rawText}
+          parsed={currentClaim.parsed}
+          claimId={currentClaim.claimId}
           onCancelBroadcast={() => setHelpStep(2)}
           onNewRequest={() => setHelpStep(1)}
         />
@@ -147,7 +194,7 @@ export default function App() {
       <BottomNav
         activeTab={activeTab}
         onTabChange={(tab) => setActiveTab(tab)}
-        pendingResponseCount={3}
+        pendingResponseCount={peerCount}
         isBroadcasting={helpStep === 3}
         peerCount={peerCount}
         batteryPercent={batteryPercent}
@@ -161,25 +208,27 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#0e1313] text-[#f0f0f3] flex flex-col font-sans">
-      {/* Top Studio Controls */}
-      <TopStudioBar
-        viewMode={viewMode}
-        onViewModeChange={setViewMode}
-        currentLanguage={language}
-        onLanguageChange={setLanguage}
-        onSimulateHop={handleSimulateMeshHop}
-      />
+      {/* Top Studio Controls: hidden on small mobile viewport */}
+      <div className="hidden sm:block">
+        <TopStudioBar
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+          currentLanguage={language}
+          onLanguageChange={setLanguage}
+          onSimulateHop={handleSimulateMeshHop}
+        />
+      </div>
 
       {/* Global Notification Banner */}
       {notification && (
-        <div className="bg-[#004546] text-[#a6eff0] px-4 py-2 text-center text-xs font-semibold flex items-center justify-center gap-2 border-b border-[#005f60]">
+        <div className="bg-[#004546] text-[#a6eff0] px-4 py-2 text-center text-xs font-semibold flex items-center justify-center gap-2 border-b border-[#005f60] z-50">
           <span className="material-symbols-outlined text-[16px]">sensors</span>
           <span>{notification}</span>
         </div>
       )}
 
       {/* Main Workspace based on ViewMode */}
-      <div className="flex-1 flex overflow-hidden p-2 sm:p-4">
+      <div className="flex-1 flex overflow-hidden p-0 sm:p-2 md:p-4">
         {/* Mode 1: Pure Phone Frame */}
         {viewMode === 'phone' && (
           <div className="w-full flex items-center justify-center overflow-y-auto">

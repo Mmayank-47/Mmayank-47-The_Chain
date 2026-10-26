@@ -93,7 +93,7 @@ class CarryStore:
     def neighbour_count(self, neighbour: str) -> int:
         return self._neighbour_counts.get(neighbour, 0)
 
-    def add(self, msg: Message, tokens: Optional[int], now: float,
+    def add(self, msg: Message, tokens: Optional[int], now: float = 0.0,
             from_id: Optional[str] = None) -> bool:
         if msg.msg_id in self._seen:
             return False
