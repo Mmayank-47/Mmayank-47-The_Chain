@@ -7,6 +7,13 @@ kotlin {
 }
 
 dependencies {
+    api(project(":node"))
+    api(project(":transport"))
+    api(project(":core"))
+    api(project(":matching"))
+    api(project(":identity"))
+    api(project(":merge"))
+    implementation(project(":crypto-fake"))
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.platform.launcher)
     testImplementation(testFixtures(project(":core")))

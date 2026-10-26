@@ -5,13 +5,15 @@ package org.thechain.ux
  */
 const val CORROB_LLR = 1.5
 
-private val PLACE = Regex("(?U)[^\\w\\s.\\-\u0900-\u097F]")
+// Android's java.util.regex rejects the JVM-only (?U) flag, so these patterns stay Unicode-safe
+// without it: Devanagari is listed explicitly, and \d / \s match the same characters we need.
+private val PLACE = Regex("[^\\w\\s.\\-\u0900-\u097F]")
 private val MANIPULATIVE = Regex(
     "urgent|hurry|immediately|right now|asap|last chance|only you|must|!|जल्दी|तुरंत|लवकर|ताबडतोब",
     RegexOption.IGNORE_CASE,
 )
-private val NUM = Regex("(?U)\\d+(?:\\.\\d+)?")
-private val HOLE = Regex("\\{([A-Za-z0-9_]+)}")
+private val NUM = Regex("\\d+(?:\\.\\d+)?")
+private val HOLE = Regex("\\{([A-Za-z0-9_]+)\\}")
 
 data class Facts(
     val tags: List<String>,
@@ -47,7 +49,7 @@ fun verifiersFromParts(parts: Map<String, Double>): Int =
     maxOf(0, pyRoundToInt((parts["corroboration"] ?: 0.0) / CORROB_LLR))
 
 fun cleanPlace(s: String, cap: Int = 40): String =
-    PLACE.replace(s, " ").split(Regex("(?U)\\s+")).filter { it.isNotEmpty() }.joinToString(" ").take(cap)
+    PLACE.replace(s, " ").split(Regex("\\s+")).filter { it.isNotEmpty() }.joinToString(" ").take(cap)
 
 fun lint(text: String): List<String> =
     MANIPULATIVE.findAll(text).map { it.value.lowercase() }.toSet().sorted()
@@ -125,7 +127,7 @@ fun constrainedPolish(
     val prompt = "Rewrite as one short, calm paragraph. Keep every number and place name exactly. " +
         "Add no facts, no pressure words.\n" + j.text
     val out = try {
-        generate(prompt).split(Regex("(?U)\\s+")).filter { it.isNotEmpty() }.joinToString(" ")
+        generate(prompt).split(Regex("\\s+")).filter { it.isNotEmpty() }.joinToString(" ")
     } catch (_: Exception) {
         return j
     }

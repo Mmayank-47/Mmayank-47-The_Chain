@@ -1,0 +1,384 @@
+﻿
+10-26 10:14:11.121  4765  4765 I adbd    : adbd service requested 'shell,v2,TERM=dumb,raw:am force-stop 
+org.thechain.app'
+10-26 10:14:11.179  3358  6273 I ActivityManager: Force stopping org.thechain.app appid=10259 user=0: from pid 22963
+10-26 10:14:11.180  3358  6273 I ActivityManager: Killing 22034:org.thechain.app/u0a259 (adj 0): stop org.thechain.app 
+due to from pid 22963
+10-26 10:14:11.183  2525  2525 I vendor.qti.hardware.servicetrackeraidl-service: removing client with pid 22034process 
+nameorg.thechain.app
+10-26 10:14:11.187  2525  2525 I vendor.qti.hardware.servicetrackeraidl-service: destroyService is called for service 
+: org.thechain.app/.ChainForegroundService
+10-26 10:14:11.187  3358  6273 W ForegroundServiceTypeLoggerModule: Logger should be tracking FGS types correctly for 
+UID 10259 in package org.thechain.app
+10-26 10:14:11.187  3358  6273 W ForegroundServiceTypeLoggerModule: Logger should be tracking FGS types correctly for 
+UID 10259 in package org.thechain.app
+10-26 10:14:11.187  3358  6273 W ForegroundServiceTypeLoggerModule: Logger should be tracking FGS types correctly for 
+UID 10259 in package org.thechain.app
+10-26 10:14:11.188  3358  6273 W ActivityTaskManager: Force removing ActivityRecord{47724822 u0 
+org.thechain.app/.MainActivity t2951 f}}: app died, no saved state
+10-26 10:14:11.190  4265  4362 V WindowManagerShell: Transition requested (#13674): android.os.BinderProxy@eab602d 
+TransitionRequestInfo { type = CLOSE, triggerTask = TaskInfo{userId=0 taskId=2951 effectiveUid=10259 displayId=0 
+isRunning=false baseIntent=Intent { flg=0x10000000 cmp=org.thechain.app/.MainActivity } baseActivity=null 
+topActivity=null origActivity=null realActivity=ComponentInfo{org.thechain.app/org.thechain.app.MainActivity} 
+numActivities=0 lastActiveTime=1262829372 supportsMultiWindow=true resizeMode=1 isResizeable=true minWidth=-1 
+minHeight=-1 defaultMinSize=220 token=WCT{android.window.IWindowContainerToken$Stub$Proxy@613d962} topActivityType=1 
+pictureInPictureParams=null shouldDockBigOverlays=false launchIntoPipHostTaskId=-1 lastParentTaskIdBeforePip=-1 
+displayCutoutSafeInsets=Rect(0, 0 - 0, 0) topActivityInfo=null launchCookies=[] positionInParent=Point(0, 0) 
+parentTaskId=-1 isFocused=true isVisible=true isVisibleRequested=true isTopActivityNoDisplay=false isSleeping=false 
+locusId=null displayAreaFeatureId=1 isTopActivityTransparent=false isActivityStackTransparent=true 
+lastNonFullscreenBounds=Rect(276, 687 - 805, 1767) capturedLink=null capturedLinkTimestamp=0 requestedVisibleTypes=-9 
+topActivityRequestOpenInBrowserEducationTimestamp=0 appCompatTaskInfo=AppCompatTaskInfo { 
+topActivityInSizeCompat=false eligibleForLetterboxEducation= false isLetterboxEducationEnabled= false 
+isLetterboxDoubleTapEnabled= false eligibleForUserAspectRatioButton= false topActivityBoundsLetterboxed= false 
+isFromLetterboxDoubleTap= false topActivityLetterboxVerticalPosition= -1 topActivityLetterboxHorizontalPosition= -1 
+topActivityLetterboxWidth=-1 topActivityLetterboxHeight=-1 topActivityAppBounds=Rect(0, 0 - 0, 0) 
+isUserFullscreenOverrideEnabled=false isSystemFullscreenOverrideEnabled=false hasMinAspectRatioOverride=false 
+topActivityLetterboxBounds=null cameraCompatTaskInfo=CameraCompatTaskInfo { freeformCameraCompatMode=undefined}} 
+topActivityMainWindowFrame=null}, pipChange = null, remoteTransition = null, displayChange = null, flags = 0, debugId 
+= 13674 }
+10-26 10:14:11.203  3358  3409 D NtStartingWindowManagerImpl:    ChangeInfo{e88ae80 container=ActivityRecord{47724822 
+u0 org.thechain.app/.MainActivity t2951 f} isExiting} flags=0x0}
+10-26 10:14:11.203  3358  3409 D NtStartingWindowManagerImpl:    ChangeInfo{fe4a8fe container=Task{4793297 #2951 
+type=standard A=10259:org.thechain.app} flags=0x0}
+10-26 10:14:11.216  3358  3935 W InputDispatcher: channel '2c72b6 org.thechain.app/org.thechain.app.MainActivity' ~ 
+Consumer closed input channel or an error occurred.  events=0x9
+10-26 10:14:11.216  3358  3935 E InputDispatcher: channel '2c72b6 org.thechain.app/org.thechain.app.MainActivity' ~ 
+Channel is unrecoverably broken and will be disposed!
+10-26 10:14:11.220  1614  5876 I NearbyConnections: Client (162585486) org.thechain.app disconnecting due to binder 
+death!
+10-26 10:14:11.220  1614 10041 I NearbyConnections: Client (162585486) org.thechain.app disconnecting due to binder 
+death!
+10-26 10:14:11.221  3358  3935 I WindowManager: WINDOW DIED Window{2c72b6 u0 
+org.thechain.app/org.thechain.app.MainActivity}
+10-26 10:14:11.221  3358  4064 I ImeTracker: org.thechain.app:7876496b: onRequestHide at ORIGIN_SERVER reason 
+HIDE_REMOVE_CLIENT fromUser false
+10-26 10:14:11.221  3358  4064 I ImeTracker: org.thechain.app:7876496b: onCancelled at PHASE_SERVER_SHOULD_HIDE
+10-26 10:14:11.222  3358  3405 V WindowManager: Sent Transition (#13674) createdAt=10-26 10:14:11.188 via 
+request=TransitionRequestInfo { type = CLOSE, triggerTask = TaskInfo{userId=0 taskId=2951 effectiveUid=10259 
+displayId=0 isRunning=false baseIntent=Intent { flg=0x10000000 cmp=org.thechain.app/.MainActivity } baseActivity=null 
+topActivity=null origActivity=null realActivity=ComponentInfo{org.thechain.app/org.thechain.app.MainActivity} 
+numActivities=0 lastActiveTime=1262829372 supportsMultiWindow=true resizeMode=1 isResizeable=true minWidth=-1 
+minHeight=-1 defaultMinSize=220 token=WCT{RemoteToken{bc3ed26 Task{4793297 #2951 type=standard 
+A=10259:org.thechain.app}}} topActivityType=1 pictureInPictureParams=null shouldDockBigOverlays=false 
+launchIntoPipHostTaskId=-1 lastParentTaskIdBeforePip=-1 displayCutoutSafeInsets=Rect(0, 0 - 0, 0) topActivityInfo=null 
+launchCookies=[] positionInParent=Point(0, 0) parentTaskId=-1 isFocused=true isVisible=true isVisibleRequested=true 
+isTopActivityNoDisplay=false isSleeping=false locusId=null displayAreaFeatureId=1 isTopActivityTransparent=false 
+isActivityStackTransparent=true lastNonFullscreenBounds=Rect(276, 687 - 805, 1767) capturedLink=null 
+capturedLinkTimestamp=0 requestedVisibleTypes=-9 topActivityRequestOpenInBrowserEducationTimestamp=0 
+appCompatTaskInfo=AppCompatTaskInfo { topActivityInSizeCompat=false eligibleForLetterboxEducation= false 
+isLetterboxEducationEnabled= false isLetterboxDoubleTapEnabled= false eligibleForUserAspectRatioButton= false 
+topActivityBoundsLetterboxed= false isFromLetterboxDoubleTap= false topActivityLetterboxVerticalPosition= -1 
+topActivityLetterboxHorizontalPosition= -1 topActivityLetterboxWidth=-1 topActivityLetterboxHeight=-1 
+topActivityAppBounds=Rect(0, 0 - 0, 0) isUserFullscreenOverrideEnabled=false isSystemFullscreenOverrideEnabled=false 
+hasMinAspectRatioOverride=false topActivityLetterboxBounds=null cameraCompatTaskInfo=CameraCompatTaskInfo { 
+freeformCameraCompatMode=undefined}} topActivityMainWindowFrame=null}, pipChange = null, remoteTransition = null, 
+displayChange = null, flags = 0, debugId = 13674 }
+10-26 10:14:11.222  3358  3405 V WindowManager:         {WCT{RemoteToken{bc3ed26 Task{4793297 #2951 type=standard 
+A=10259:org.thechain.app}}} m=CLOSE f=NONE leash=Surface(name=Task=2951)/@0x254bc68 sb=Rect(0, 0 - 1080, 2392) 
+eb=Rect(0, 0 - 1080, 2392) epz=Point(1080, 2392) d=0 taskParent=-1 ntPopUpView={mIsTryEnterWindowingMode=false 
+mIsEnterWindowingModeLandscape=false mIsChangingWindowformBounds=false mStartPos=Point(0, 0) mEndPos=Point(0, 0) 
+mStartScale=0.0 mEndScale=0.0 mStartCornerRadius=0.0 mEndCornerRadius=0.0 mAppBounds=Rect(0, 0 - 0, 0) 
+mWindowCrop=Rect(0, 0 - 0, 0) mStartDragOrChangingBounds=Rect(0, 0 - 0, 0) mEndDragOrChangingBounds=Rect(0, 0 - 0, 0) 
+mBottomLeftCornerLeash=null mBottomRightCornerLeash=null mDragBarLeash=null mCornerHintSize=60x60 
+mDragBarSize=189x42}},
+10-26 10:14:11.225  3358  6273 I AppsFilter: interaction: PackageSetting{346a99c 
+com.android.microdroid.empty_payload/10255} -> PackageSetting{702aef3 org.thechain.app/10259} BLOCKED
+10-26 10:14:11.225  3358  6273 I AppsFilter: interaction: PackageSetting{a977f7a 
+com.example.hermes_voice_assistant/10461} -> PackageSetting{702aef3 org.thechain.app/10259} BLOCKED
+10-26 10:14:11.225  3358  6273 I AppsFilter: interaction: PackageSetting{db4a32b com.misthi125.navigation/10372} -> 
+PackageSetting{702aef3 org.thechain.app/10259} BLOCKED
+10-26 10:14:11.225  3358  6273 I AppsFilter: interaction: PackageSetting{de2c388 com.isro.sih.flutter_app/10463} -> 
+PackageSetting{702aef3 org.thechain.app/10259} BLOCKED
+10-26 10:14:11.225  3358  6273 I AppsFilter: interaction: PackageSetting{450e121 com.ilo.mentalhealth/10462} -> 
+PackageSetting{702aef3 org.thechain.app/10259} BLOCKED
+10-26 10:14:11.225  3358  6273 W ActivityManager: Invalid packageName: org.thechain.app
+10-26 10:14:11.225  3358  6273 W ActivityManager: Invalid packageName: org.thechain.app
+10-26 10:14:11.225  3358  4954 V ActivityManager: Got obituary of 22034:org.thechain.app
+10-26 10:14:11.232  3358  4909 I WindowManager: WIN DEATH: Window{2c72b6 u0 
+org.thechain.app/org.thechain.app.MainActivity EXITING}
+10-26 10:14:11.302 30544 30544 I NotificationListener: received notification removed event - 
+org.thechain.app#UserHandle{0},category=-1
+10-26 10:14:11.316  4601  4601 D CarrierSvcBindHelper: onHandleForceStop: [org.thechain.app]
+10-26 10:14:11.382  1614 22960 I NearbyMediums: Successfully stopped BLE advertising for service org.thechain.mesh.aid
+10-26 10:14:11.383  1614 22960 I NearbyMediums: Close BLE L2CAP server socket, service-id=org.thechain.mesh.aid
+10-26 10:14:11.383  1614 22960 I NearbyMediums: Close BLE GATT server socket, service-id=org.thechain.mesh.aid
+10-26 10:14:11.617  4265  4362 D PopUpViewTransitionObserver: onTransitionFinished: 
+transition=android.os.BinderProxy@eab602d, taskInfo=[TaskInfo{userId=0 taskId=2951 effectiveUid=10259 displayId=0 
+isRunning=false baseIntent=Intent { flg=0x10000000 cmp=org.thechain.app/.MainActivity } baseActivity=null 
+topActivity=null origActivity=null realActivity=ComponentInfo{org.thechain.app/org.thechain.app.MainActivity} 
+numActivities=0 lastActiveTime=1262829372 supportsMultiWindow=true resizeMode=1 isResizeable=true minWidth=-1 
+minHeight=-1 defaultMinSize=220 token=WCT{android.window.IWindowContainerToken$Stub$Proxy@cd1ae9d} topActivityType=1 
+pictureInPictureParams=null shouldDockBigOverlays=false launchIntoPipHostTaskId=-1 lastParentTaskIdBeforePip=-1 
+displayCutoutSafeInsets=Rect(0, 126 - 0, 0) topActivityInfo=null launchCookies=[] positionInParent=Point(0, 0) 
+parentTaskId=-1 isFocused=false isVisible=true isVisibleRequested=false isTopActivityNoDisplay=false isSleeping=false 
+locusId=null displayAreaFeatureId=1 isTopActivityTransparent=false isActivityStackTransparent=true 
+lastNonFullscreenBounds=Rect(276, 687 - 805, 1767) capturedLink=null capturedLinkTimestamp=0 requestedVisibleTypes=-9 
+topActivityRequestOpenInBrowserEducationTimestamp=0 appCompatTaskInfo=AppCompatTaskInfo { 
+topActivityInSizeCompat=false eligibleForLetterboxEducation= false isLetterboxEducationEnabled= false 
+isLetterboxDoubleTapEnabled= false eligibleForUserAspectRatioButton= false topActivityBoundsLetterboxed= false 
+isFromLetterboxDoubleTap= false topActivityLetterboxVerticalPosition= -1 topActivityLetterboxHorizontalPosition= -1 
+topActivityLetterboxWidth=-1 topActivityLetterboxHeight=-1 topActivityAppBounds=Rect(0, 0 - 0, 0) 
+isUserFullscreenOverrideEnabled=false isSystemFullscreenOverrideEnabled=false hasMinAspectRatioOverride=false 
+topActivityLetterboxBounds=null cameraCompatTaskInfo=CameraCompatTaskInfo { freeformCameraCompatMode=undefined}} 
+topActivityMainWindowFrame=null}]
+10-26 10:14:11.620  3358  5014 W WindowManager: Exception thrown during dispatchAppVisibility Window{2c72b6 u0 
+org.thechain.app/org.thechain.app.MainActivity EXITING}
+10-26 10:14:11.760  1614 22960 I NearbyMediums: Stopped accepting Bluetooth Classic connections for 
+org.thechain.mesh.aid.
+10-26 10:14:11.760  1614 22960 I NearbyMediums: Skipping stop accepting connections: we are not currently accepting 
+WebRTC connections for org.thechain.mesh.aid.
+10-26 10:14:11.760  1614 22960 I NearbyMediums: [WifiNetworkV2] WifiStatusChangedCallback unregistered for 
+org.thechain.mesh.aid (wifiStatusChangedCallbacks.size:1)
+10-26 10:14:11.780  1614 22960 I NearbyConnections: [InstantConnectionPcpMgr] In invalidateTxAdvertisementScanning(by 
+stopAdvertising) tx advertisement scanning skipped or stopped for endpointId:CZLL serviceId:org.thechain.mesh.aid 
+isScreenUnlocked:true isAdvertising:false powerLevel:HIGH isTxScanning:false
+10-26 10:14:11.805  1614 22960 I NearbyMediums: Stopped BLE scanning, service-id=org.thechain.mesh.aid
+10-26 10:14:12.287  4765  4765 I adbd    : adbd service requested 'shell,v2,TERM=dumb,raw:am start -n 
+org.thechain.app/.MainActivity'
+10-26 10:14:12.362  3358  4909 D NtStartingWindowManagerImpl: addStartingWindow(): r=ActivityRecord{176554583 u0 
+org.thechain.app/.MainActivity t2952}, type=2, mStartFromLauncherTransition=false
+10-26 10:14:12.362  4648  4711 I DynamicDDSService: handleMessage(ACTIVITY_INVOKE{appInfo=org.thechain.app 
+isFullScreen=}true)
+10-26 10:14:12.363  3358  4909 D NtStartingWindowManagerImpl: shouldPauseImmediately prev=ActivityRecord{31710069 u0 
+com.nothing.launcher/com.android.searchlauncher.SearchLauncher t1107}, resuming=ActivityRecord{176554583 u0 
+org.thechain.app/.MainActivity t2952}
+10-26 10:14:12.365  2439  2488 I ANDR-PWR-OPT: GAMEPOWEROPT: sendEvents() 232: Start hint for app 
+org.thechain.app/org.thechain.app.MainActivity/1, hintID : 4099, hintID hex : 1003 value: -1
+10-26 10:14:12.368  2439  2488 I ANDR-PWR-OPT: PowerAppClassifier: getAppType() 59: checking app [org.thechain.app] is 
+type 1
+10-26 10:14:12.368  2439  2488 I ANDR-PWR-OPT: GAMEPOWEROPT: isGame() 355: org.thechain.app is Game = 1
+10-26 10:14:12.368  3358  4909 D NtMemoryManager: mIsHighPressureScene: false : org.thechain.app
+10-26 10:14:12.368  3358  4909 D NtProcessManager: Top app: org.thechain.app
+10-26 10:14:12.370  3358  4909 I AppsFilter: interaction: PackageSetting{346a99c 
+com.android.microdroid.empty_payload/10255} -> PackageSetting{1f1a9e5 org.thechain.app/10259} BLOCKED
+10-26 10:14:12.370  3358  4909 I AppsFilter: interaction: PackageSetting{a977f7a 
+com.example.hermes_voice_assistant/10461} -> PackageSetting{1f1a9e5 org.thechain.app/10259} BLOCKED
+10-26 10:14:12.370  3358  4909 I AppsFilter: interaction: PackageSetting{db4a32b com.misthi125.navigation/10372} -> 
+PackageSetting{1f1a9e5 org.thechain.app/10259} BLOCKED
+10-26 10:14:12.370  3358  4909 I AppsFilter: interaction: PackageSetting{de2c388 com.isro.sih.flutter_app/10463} -> 
+PackageSetting{1f1a9e5 org.thechain.app/10259} BLOCKED
+10-26 10:14:12.370  3358  4909 I AppsFilter: interaction: PackageSetting{450e121 com.ilo.mentalhealth/10462} -> 
+PackageSetting{1f1a9e5 org.thechain.app/10259} BLOCKED
+10-26 10:14:12.371  3358  4909 D NtStartingWindowManagerImpl: onResumeTopActivity(): executeAppTransition immediately. 
+r=ActivityRecord{176554583 u0 org.thechain.app/.MainActivity t2952}
+10-26 10:14:12.372  4265  4362 V WindowManagerShell: Transition requested (#13675): android.os.BinderProxy@fd3a0d1 
+TransitionRequestInfo { type = OPEN, triggerTask = TaskInfo{userId=0 taskId=2952 effectiveUid=10259 displayId=0 
+isRunning=true baseIntent=Intent { flg=0x10000000 cmp=org.thechain.app/.MainActivity } 
+baseActivity=ComponentInfo{org.thechain.app/org.thechain.app.MainActivity} 
+topActivity=ComponentInfo{org.thechain.app/org.thechain.app.MainActivity} origActivity=null 
+realActivity=ComponentInfo{org.thechain.app/org.thechain.app.MainActivity} numActivities=1 lastActiveTime=1262871767 
+supportsMultiWindow=true resizeMode=1 isResizeable=true minWidth=-1 minHeight=-1 defaultMinSize=220 
+token=WCT{android.window.IWindowContainerToken$Stub$Proxy@ac15736} topActivityType=1 pictureInPictureParams=null 
+shouldDockBigOverlays=false launchIntoPipHostTaskId=-1 lastParentTaskIdBeforePip=-1 displayCutoutSafeInsets=Rect(0, 
+126 - 0, 0) topActivityInfo=ActivityInfo{6a8c637 org.thechain.app.MainActivity} launchCookies=[] 
+positionInParent=Point(0, 0) parentTaskId=-1 isFocused=false isVisible=false isVisibleRequested=true 
+isTopActivityNoDisplay=false isSleeping=false locusId=null displayAreaFeatureId=1 isTopActivityTransparent=false 
+isActivityStackTransparent=false lastNonFullscreenBounds=Rect(276, 687 - 805, 1767) capturedLink=null 
+capturedLinkTimestamp=0 requestedVisibleTypes=-9 topActivityRequestOpenInBrowserEducationTimestamp=0 
+appCompatTaskInfo=AppCompatTaskInfo { topActivityInSizeCompat=false eligibleForLetterboxEducation= false 
+isLetterboxEducationEnabled= false isLetterboxDoubleTapEnabled= false eligibleForUserAspectRatioButton= false 
+topActivityBoundsLetterboxed= false isFromLetterboxDoubleTap= false topActivityLetterboxVerticalPosition= -1 
+topActivityLetterboxHorizontalPosition= -1 topActivityLetterboxWidth=-1 topActivityLetterboxHeight=-1 
+topActivityAppBounds=Rect(0, 0 - 1080, 2392) isUserFullscreenOverrideEnabled=false 
+isSystemFullscreenOverrideEnabled=false hasMinAspectRatioOverride=false topActivityLetterboxBounds=null 
+cameraCompatTaskInfo=CameraCompatTaskInfo { freeformCameraCompatMode=inactive}} topActivityMainWindowFrame=null}, 
+pipChange = null, remoteTransition = null, displayChange = null, flags = 0, debugId = 13675 }
+10-26 10:14:12.372  3358  4909 I ActivityTaskManager: START u0 {flg=0x10000000 xflg=0x5 
+cmp=org.thechain.app/.MainActivity} with LAUNCH_MULTIPLE from uid 2000 pid 23159 (BAL_ALLOW_PERMISSION) result code=0
+10-26 10:14:12.379 30544 30579 I NT-AppEventTracker: Begin non-home task duration timing:TaskDuration(taskId=2952, 
+pkgName=org.thechain.app, userId=UserHandle{0}, beginTime=1792989852379, endTime=0, windowType=1, duration=0, state=2)
+10-26 10:14:12.390  3358  4438 D CoreBackPreview: Window{c0d7a86 u0 Splash Screen org.thechain.app}: Setting back 
+callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@636b912, mPriority=0, 
+mIsAnimationCallback=false, mOverrideBehavior=0}
+10-26 10:14:12.397  3358  3409 D NtStartingWindowManagerImpl: onStartingWindowDrawn(): r=ActivityRecord{176554583 u0 
+org.thechain.app/.MainActivity t2952}, null
+10-26 10:14:12.397  3358  3409 D NtStartingWindowManagerImpl: scheduleHideStartingWindow(): r=ActivityRecord{176554583 
+u0 org.thechain.app/.MainActivity t2952}, null
+10-26 10:14:12.397  3358  3409 D NtStartingWindowManagerImpl:    ChangeInfo{7b63d0c container=Task{60fb144 #2952 
+type=standard A=10259:org.thechain.app} flags=0x0}
+10-26 10:14:12.397  3358  3409 D NtStartingWindowManagerImpl:    ChangeInfo{e8e215b container=ActivityRecord{176554583 
+u0 org.thechain.app/.MainActivity t2952} flags=0x0}
+10-26 10:14:12.399  3358  3405 V WindowManager: Sent Transition (#13675) createdAt=10-26 10:14:12.352 via 
+request=TransitionRequestInfo { type = OPEN, triggerTask = TaskInfo{userId=0 taskId=2952 effectiveUid=10259 
+displayId=0 isRunning=true baseIntent=Intent { flg=0x10000000 cmp=org.thechain.app/.MainActivity } 
+baseActivity=ComponentInfo{org.thechain.app/org.thechain.app.MainActivity} 
+topActivity=ComponentInfo{org.thechain.app/org.thechain.app.MainActivity} origActivity=null 
+realActivity=ComponentInfo{org.thechain.app/org.thechain.app.MainActivity} numActivities=1 lastActiveTime=1262871767 
+supportsMultiWindow=true resizeMode=1 isResizeable=true minWidth=-1 minHeight=-1 defaultMinSize=220 
+token=WCT{RemoteToken{2837837 Task{60fb144 #2952 type=standard A=10259:org.thechain.app}}} topActivityType=1 
+pictureInPictureParams=null shouldDockBigOverlays=false launchIntoPipHostTaskId=-1 lastParentTaskIdBeforePip=-1 
+displayCutoutSafeInsets=Rect(0, 126 - 0, 0) topActivityInfo=ActivityInfo{22521a4 org.thechain.app.MainActivity} 
+launchCookies=[] positionInParent=Point(0, 0) parentTaskId=-1 isFocused=false isVisible=false isVisibleRequested=true 
+isTopActivityNoDisplay=false isSleeping=false locusId=null displayAreaFeatureId=1 isTopActivityTransparent=false 
+isActivityStackTransparent=false lastNonFullscreenBounds=Rect(276, 687 - 805, 1767) capturedLink=null 
+capturedLinkTimestamp=0 requestedVisibleTypes=-9 topActivityRequestOpenInBrowserEducationTimestamp=0 
+appCompatTaskInfo=AppCompatTaskInfo { topActivityInSizeCompat=false eligibleForLetterboxEducation= false 
+isLetterboxEducationEnabled= false isLetterboxDoubleTapEnabled= false eligibleForUserAspectRatioButton= false 
+topActivityBoundsLetterboxed= false isFromLetterboxDoubleTap= false topActivityLetterboxVerticalPosition= -1 
+topActivityLetterboxHorizontalPosition= -1 topActivityLetterboxWidth=-1 topActivityLetterboxHeight=-1 
+topActivityAppBounds=Rect(0, 0 - 1080, 2392) isUserFullscreenOverrideEnabled=false 
+isSystemFullscreenOverrideEnabled=false hasMinAspectRatioOverride=false topActivityLetterboxBounds=null 
+cameraCompatTaskInfo=CameraCompatTaskInfo { freeformCameraCompatMode=inactive}} topActivityMainWindowFrame=null}, 
+pipChange = null, remoteTransition = null, displayChange = null, flags = 0, debugId = 13675 }
+10-26 10:14:12.400  3358  3405 V WindowManager:         {WCT{RemoteToken{2837837 Task{60fb144 #2952 type=standard 
+A=10259:org.thechain.app}}} m=OPEN f=NONE leash=Surface(name=Task=2952)/@0xdce82d1 sb=Rect(0, 0 - 1080, 2392) 
+eb=Rect(0, 0 - 1080, 2392) epz=Point(1080, 2392) d=0 taskParent=-1 ntPopUpView={mIsTryEnterWindowingMode=false 
+mIsEnterWindowingModeLandscape=false mIsChangingWindowformBounds=false mStartPos=Point(0, 0) mEndPos=Point(0, 0) 
+mStartScale=0.0 mEndScale=0.0 mStartCornerRadius=0.0 mEndCornerRadius=0.0 mAppBounds=Rect(0, 0 - 0, 0) 
+mWindowCrop=Rect(0, 0 - 0, 0) mStartDragOrChangingBounds=Rect(0, 0 - 0, 0) mEndDragOrChangingBounds=Rect(0, 0 - 0, 0) 
+mBottomLeftCornerLeash=null mBottomRightCornerLeash=null mDragBarLeash=null mCornerHintSize=60x60 
+mDragBarSize=189x42}},
+10-26 10:14:12.404  3358  3447 I ActivityManager: Start proc 23166:org.thechain.app/u0a259 for top-activity 
+{org.thechain.app/org.thechain.app.MainActivity}
+10-26 10:14:12.863 23166 23166 D nativeloader: Configuring clns-9 for other apk 
+/data/app/~~f9BxyMdIx8629_UZKkWgLw==/org.thechain.app--8h9EipX0XPAnDyu_cDsPw==/base.apk. target_sdk_version=35, 
+uses_libraries=, library_path=/data/app/~~f9BxyMdIx8629_UZKkWgLw==/org.thechain.app--8h9EipX0XPAnDyu_cDsPw==/lib/arm64:
+/data/app/~~f9BxyMdIx8629_UZKkWgLw==/org.thechain.app--8h9EipX0XPAnDyu_cDsPw==/base.apk!/lib/arm64-v8a, 
+permitted_path=/data:/mnt/expand:/data/user/0/org.thechain.app
+10-26 10:14:12.871 23166 23166 V GraphicsEnvironment: org.thechain.app is not listed in per-application setting
+10-26 10:14:12.871 23166 23166 V GraphicsEnvironment: org.thechain.app is not listed in ANGLE allowlist or settings, 
+returning default
+10-26 10:14:12.926  3358  4438 V NtGameModeImpl: onAppFocusChanged: pkg=org.thechain.app, uid=10259, category=-1, 
+launchMode= 1
+10-26 10:14:12.926  3358  4438 D NtPopUpViewImpl: PopUpView: onAppFocusChanged: newTask=Task{60fb144 #2952 
+type=standard A=10259:org.thechain.app}, showDimmer=false
+10-26 10:14:12.926  3358  4438 D NtKafkaEventHelper: onActivityRecordChanged: info org.thechain.app:10259:23166
+10-26 10:14:12.936  4245  7209 D TopAppSceneDetector: currentFocusApp=org.thechain.app
+10-26 10:14:12.938  4245  7209 D NearbyDetector: onTopActivityChanged: top class name: org.thechain.app.MainActivity
+10-26 10:14:12.944  4245  7209 D GameSceneDetector: onTopChanged=org.thechain.app, isBoostTypeGame=false, 
+isCategoryGame=false, isTopGame=false
+10-26 10:14:12.944 23166 23216 I AdrenoGLES-0: Process Name                     : org.thechain.app
+10-26 10:14:12.944  4245  7209 D SceneManager: TopAPP=org.thechain.app
+10-26 10:14:12.955  2534  2534 I qspmHal : gpuProfName:org.thechain.app-gpu - gpu 
+prof_info.path:/data/vendor/gaming/org.thechain.app-gpu
+10-26 10:14:12.964  3358  4438 I ActivityManager: Background started FGS: Allowed [callingPackage: org.thechain.app; 
+callingUid: 10259; uidState: TOP ; uidBFSL: [BFSL]; intent: Intent { xflg=0x4 
+cmp=org.thechain.app/.ChainForegroundService }; code:PROC_STATE_TOP; tempAllowListReason:<null>; allowWiu:12; 
+targetSdkVersion:35; callerTargetSdkVersion:35; startForegroundCount:0; bindFromPackage:null: isBindService:false]
+10-26 10:14:12.966  2525  2525 I vendor.qti.hardware.servicetrackeraidl-service: bindService is called for service : 
+org.thechain.app/.ChainForegroundService and for client org.thechain.app
+10-26 10:14:12.966  2525  2525 I vendor.qti.hardware.servicetrackeraidl-service: total connections for service : 
+org.thechain.app/.ChainForegroundServiceare :1
+10-26 10:14:12.966  2525  2525 I vendor.qti.hardware.servicetrackeraidl-service: total connections for client : 
+org.thechain.appare :1
+10-26 10:14:12.988  3358  4789 I ActivityManager: Background started FGS: Allowed [callingPackage: org.thechain.app; 
+callingUid: 10259; uidState: TOP ; uidBFSL: [BFSL]; intent: Intent { xflg=0x4 
+cmp=org.thechain.app/.ChainForegroundService }; code:PROC_STATE_TOP; tempAllowListReason:<null>; allowWiu:12; 
+targetSdkVersion:35; callerTargetSdkVersion:35; startForegroundCount:0; bindFromPackage:null: isBindService:true]
+10-26 10:14:12.989  2525  2525 I vendor.qti.hardware.servicetrackeraidl-service: bindService is called for service : 
+org.thechain.app/.ChainForegroundService and for client org.thechain.app
+10-26 10:14:12.989  2525  2525 I vendor.qti.hardware.servicetrackeraidl-service: total connections for service : 
+org.thechain.app/.ChainForegroundServiceare :1
+10-26 10:14:12.989  2525  2525 I vendor.qti.hardware.servicetrackeraidl-service: total connections for client : 
+org.thechain.appare :1
+10-26 10:14:13.003  2525  2525 I vendor.qti.hardware.servicetrackeraidl-service: bindService is called for service : 
+org.thechain.app/androidx.work.impl.background.systemjob.SystemJobService and for client system
+10-26 10:14:13.003  2525  2525 I vendor.qti.hardware.servicetrackeraidl-service: total connections for service : 
+org.thechain.app/androidx.work.impl.background.systemjob.SystemJobServiceare :1
+10-26 10:14:13.233 30544 30544 I NotificationListener: received notification removed event - 
+org.thechain.app#UserHandle{0},category=-1
+10-26 10:14:13.474 23166 23166 I PeerEnrollment: exported pubkey to /data/user/0/org.thechain.app/files/me.pub 
+nodeId=n-2ae98e252a712b96
+10-26 10:14:13.496 23166 23166 I ChainFgs: PhoneNode ready id=n-2ae98e252a712b96 hardwareWrap=true enrolledPeers=0 
+hs=on
+10-26 10:14:13.502  2525  2525 I vendor.qti.hardware.servicetrackeraidl-service: bindService is called for service : 
+com.google.android.gms/.chimera.PersistentApiServiceNoInstantApps and for client org.thechain.app
+10-26 10:14:13.502  2525  2525 I vendor.qti.hardware.servicetrackeraidl-service: total connections for client : 
+org.thechain.appare :2
+10-26 10:14:13.623  3358  4787 D CoreBackPreview: Window{8e93942 u0 org.thechain.app/org.thechain.app.MainActivity}: 
+Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@3bca5a1, 
+mPriority=0, mIsAnimationCallback=false, mOverrideBehavior=0}
+10-26 10:14:13.727 30544 30544 I NotificationListener: received notification removed event - 
+org.thechain.app#UserHandle{0},category=-1
+10-26 10:14:13.862 23166 23166 D WM-WorkerWrapper: Starting work for org.thechain.app.RestartMeshWorker
+10-26 10:14:13.862  3358  3409 D NtStartingWindowManagerImpl: onFirstWindowDrawn(): r=ActivityRecord{176554583 u0 
+org.thechain.app/.MainActivity t2952}, null
+10-26 10:14:13.870  3358  3405 I ActivityTaskManager: Displayed org.thechain.app/.MainActivity for user 0: +1s518ms
+10-26 10:14:13.872  1614  6499 I NearbyConnections: Client 107454345 with package name org.thechain.app and sdk 
+version 12451000 has connected, downloads dir is set to null.
+10-26 10:14:13.876  1614  6499 I NearbyConnections: ClientProxy(org.thechain.app) allow WebRtc to use mobile data.
+10-26 10:14:13.876  1614 21534 I NearbyConnections: 107454345 org.thechain.app startAdvertising in nc mode.
+10-26 10:14:13.886  3358  3408 D NtPerfTraceManagerImpl: packageName = org.thechain.app, taskId = 2952
+10-26 10:14:13.898  1614 22502 I NearbyConnections: generateRxInstantConnectionAdvBytes() returns null because the 
+client (org.thechain.app) is not allowed for an instant connection.
+10-26 10:14:13.899  1614 22502 W NearbyConnections: Missing permission: org.thechain.app does not have required 
+permission android.permission.NFC
+10-26 10:14:13.906  1614 22502 I NearbyMediums: Started accepting Bluetooth Classic connections for 
+org.thechain.mesh.aid.
+10-26 10:14:13.908 23166 23218 I WM-WorkerWrapper: Worker result SUCCESS for Work [ 
+id=be2610da-0b91-4c95-8906-bbf068b61032, tags={ org.thechain.app.RestartMeshWorker } ]
+10-26 10:14:13.918  2525  2525 I vendor.qti.hardware.servicetrackeraidl-service: unbindService is called for service : 
+org.thechain.app/androidx.work.impl.background.systemjob.SystemJobService and for client system
+10-26 10:14:13.918  2525  2525 I vendor.qti.hardware.servicetrackeraidl-service: size of service connections for 
+service: org.thechain.app/androidx.work.impl.background.systemjob.SystemJobServiceafter removal is 0
+10-26 10:14:13.918  2525  2525 I vendor.qti.hardware.servicetrackeraidl-service: destroyService is called for service 
+: org.thechain.app/androidx.work.impl.background.systemjob.SystemJobService
+10-26 10:14:13.921  3358  3944 I ImeTracker: org.thechain.app:e09896f2: onRequestHide at ORIGIN_SERVER reason 
+HIDE_UNSPECIFIED_WINDOW fromUser false
+10-26 10:14:13.927 30612 30612 I GoogleInputMethodService: GoogleInputMethodService.onStartInput():1552 
+onStartInput(EditorInfo{EditorInfo{packageName=org.thechain.app, inputType=0, inputTypeString=NULL, 
+enableLearning=false, autoCorrection=false, autoComplete=false, imeOptions=0, privateImeOptions=null, 
+actionName=UNSPECIFIED, actionLabel=null, initialSelStart=-1, initialSelEnd=-1, initialCapsMode=0, label=null, 
+fieldId=0, fieldName=null, extras=null, hintText=null, hintLocales=[]}}, false)
+10-26 10:14:13.928  3358  4438 W PackageConfigPersister: App-specific configuration not found for packageName: 
+org.thechain.app and userId: 0
+10-26 10:14:13.929 23166 23166 I ImeTracker: org.thechain.app:e09896f2: onCancelled at PHASE_CLIENT_ALREADY_HIDDEN
+10-26 10:14:14.032  3358  3794 I AppsFilter: interaction: PackageSetting{346a99c 
+com.android.microdroid.empty_payload/10255} -> PackageSetting{fbaf4e3 org.thechain.app/10259} BLOCKED
+10-26 10:14:14.033  3358  3794 I AppsFilter: interaction: PackageSetting{a977f7a 
+com.example.hermes_voice_assistant/10461} -> PackageSetting{fbaf4e3 org.thechain.app/10259} BLOCKED
+10-26 10:14:14.033  3358  3794 I AppsFilter: interaction: PackageSetting{db4a32b com.misthi125.navigation/10372} -> 
+PackageSetting{fbaf4e3 org.thechain.app/10259} BLOCKED
+10-26 10:14:14.033  3358  3794 I AppsFilter: interaction: PackageSetting{de2c388 com.isro.sih.flutter_app/10463} -> 
+PackageSetting{fbaf4e3 org.thechain.app/10259} BLOCKED
+10-26 10:14:14.033  3358  3794 I AppsFilter: interaction: PackageSetting{450e121 com.ilo.mentalhealth/10462} -> 
+PackageSetting{fbaf4e3 org.thechain.app/10259} BLOCKED
+10-26 10:14:14.036  3358  4109 D ShortcutService: changing package: org.thechain.app userId=0
+10-26 10:14:14.118 30544 30544 I NotificationListener: received notification removed event - 
+org.thechain.app#UserHandle{0},category=-1
+10-26 10:14:14.224  3358  4438 D CoreBackPreview: Window{c0d7a86 u0 Splash Screen org.thechain.app EXITING}: Setting 
+back callback null
+10-26 10:14:14.425  1614 22502 I NearbyMediums: Started accepting BLE Gatt connections, 
+service-id=org.thechain.mesh.aid
+10-26 10:14:14.428  1614 22502 I NearbyMediums: Started accepting BLE L2CAP connections, 
+service-id=org.thechain.mesh.aid
+10-26 10:14:14.732  1614 22502 I NearbyMediums: Successfully started BLE advertising of size 35 for service 
+org.thechain.mesh.aid, deviceToken : [ 0x1e 0x38 ].
+10-26 10:14:14.733  1614 22502 W NearbyMediums: MEDIUM_ERROR 
+[DEVICE][WIFI_LAN][START_LISTENING_INCOMING_CONNECTION][MEDIUM_NOT_AVAILABLE][WITHOUT_CONNECTED_WIFI_NETWORK], 
+service-id=org.thechain.mesh.aid
+10-26 10:14:14.733  1614 22502 W NearbyConnections: In startWifiLanAdvertising([ 0x6e 0x2d 0x32 0x61 0x65 0x39 0x38 
+0x65 0x32 0x35 0x32 0x61 0x37 0x31 0x32 0x62 0x39 0x36 ]), client 107454345 failed to start listening for incoming 
+Wifi LAN connections to ServiceId org.thechain.mesh.aid
+10-26 10:14:14.733  1614 22502 W NearbyConnections: In startUsbAdvertising([ 0x6e 0x2d 0x32 0x61 0x65 0x39 0x38 0x65 
+0x32 0x35 0x32 0x61 0x37 0x31 0x32 0x62 0x39 0x36 ]), client 107454345 failed to start listening for incoming USB 
+connections to ServiceId org.thechain.mesh.aid
+10-26 10:14:14.734  1614 22502 I NearbyMediums: [WifiNetworkV2] WifiStatusChangedCallback registered for 
+org.thechain.mesh.aid (wifiStatusChangedCallbacks.size:2)
+10-26 10:14:14.734  1614 22502 I NearbyConnections: Get local endpoint id from the existing localEndpointId:714O 
+(last:null) for client 107454345(org.thechain.app)
+10-26 10:14:14.735  1614 21534 I NearbyConnections: 107454345 org.thechain.app startDiscovery in nc mode.
+10-26 10:14:14.736 23166 23166 I NearbyRadio: advertising as n-2ae98e252a712b96
+10-26 10:14:14.747  1614 22502 W NearbyConnections: Missing permission: org.thechain.app does not have required 
+permission android.permission.NFC
+10-26 10:14:14.772  1614 22502 I NearbyMediums: Started BLE scanning, service-id=org.thechain.mesh.aid, 
+is-extended-advert=true, power-level=3, scan-mode=low-latency
+10-26 10:14:14.772  1614 22502 I NearbyConnections: Pause bluetooth discovery for service id : org.thechain.mesh.aid
+10-26 10:14:14.776  1614 22502 W NearbyMediums: MEDIUM_ERROR 
+[DEVICE][WIFI_LAN][START_DISCOVERING][MEDIUM_NOT_AVAILABLE][WITHOUT_CONNECTED_WIFI_NETWORK], 
+service-id=org.thechain.mesh.aid
+10-26 10:14:14.776  1614 22502 I NearbyConnections: In startUsbDiscovery(), client 107454345 couldn't start scanning 
+on USB for serviceId org.thechain.mesh.aid.
+10-26 10:14:14.778 23166 23166 I NearbyRadio: discovering
+10-26 10:14:17.950  4245  7209 D ThermalMitigationStrategy: reEvaluate:  mPendingScenesInfo: scenes: [charger] app: 
+org.thechain.app appCat: -1 level: 3 temp: 32 uid: 10259 pid: 23166 mScenesInfo: scenes: [charger] app: 
+org.thechain.app appCat: -1 level: 3 temp: 32 uid: 10259 pid: 22034 sceneChange: false appChange: false levelChange: 
+false
+10-26 10:14:17.950  4245  7209 D ThermalMitigationStrategy: notifyBufferRateLocked: org.thechain.app 23166 10259 -1 
+org.thechain.app|charger -1
+10-26 10:14:18.027 23166 23282 D ProfileInstaller: Installing profile for org.thechain.app
+10-26 10:14:19.777  1614 21534 W NearbyMediums: MEDIUM_ERROR 
+[DEVICE][WIFI_LAN][START_DISCOVERING][MEDIUM_NOT_AVAILABLE][WITHOUT_CONNECTED_WIFI_NETWORK], 
+service-id=org.thechain.mesh.aid
+
+

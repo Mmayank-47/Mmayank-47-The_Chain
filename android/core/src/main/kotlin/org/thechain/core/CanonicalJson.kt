@@ -16,6 +16,11 @@ object CanonicalJson {
         is Byte, is Short, is Int, is Long -> value.toString()
         is Float -> pythonFloat(value.toDouble())
         is Double -> pythonFloat(value)
+        is java.math.BigInteger -> value.toString()
+        is java.math.BigDecimal -> {
+            val stripped = value.stripTrailingZeros()
+            if (stripped.scale() <= 0) stripped.toBigInteger().toString() else pythonFloat(value.toDouble())
+        }
         is String -> pythonString(value)
         is Map<*, *> -> {
             val keys = value.keys.map { it as String }.sorted()
@@ -117,6 +122,155 @@ object CanonicalJson {
 }
 
 fun canonical(value: Any?): ByteArray = CanonicalJson.bytes(value)
+
+/**
+ * Parse JSON with CPython-like number types: `1.0` stays Double, `1` becomes Int.
+ * org.json collapses `1.0` to Integer which breaks HMAC over signed mesh frames.
+ */
+fun parseJson(text: String): Any? = JsonParse.parse(text)
+
+fun parseJsonObject(text: String): Map<String, Any?>? {
+    val v = parseJson(text) ?: return null
+    @Suppress("UNCHECKED_CAST")
+    return v as? Map<String, Any?>
+}
+
+private object JsonParse {
+    fun parse(text: String): Any? {
+        return try {
+            val (v, end) = parseValue(text, skipWs(text, 0))
+            if (skipWs(text, end) != text.length) null else v
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    private fun skipWs(s: String, i: Int): Int {
+        var p = i
+        while (p < s.length && s[p] in " \t\n\r") p++
+        return p
+    }
+
+    private fun parseValue(s: String, i: Int): Pair<Any?, Int> {
+        if (i >= s.length) error("eof")
+        return when (s[i]) {
+            '{' -> parseObject(s, i)
+            '[' -> parseArray(s, i)
+            '"' -> parseString(s, i)
+            't' -> lit(s, i, "true", true)
+            'f' -> lit(s, i, "false", false)
+            'n' -> lit(s, i, "null", null)
+            else -> parseNumber(s, i)
+        }
+    }
+
+    private fun lit(s: String, i: Int, text: String, value: Any?): Pair<Any?, Int> {
+        require(s.startsWith(text, i))
+        return value to (i + text.length)
+    }
+
+    private fun parseObject(s: String, i: Int): Pair<Map<String, Any?>, Int> {
+        var p = i + 1
+        val out = linkedMapOf<String, Any?>()
+        p = skipWs(s, p)
+        if (p < s.length && s[p] == '}') return out to (p + 1)
+        while (true) {
+            p = skipWs(s, p)
+            val (key, afterKey) = parseString(s, p)
+            p = skipWs(s, afterKey)
+            require(p < s.length && s[p] == ':')
+            p = skipWs(s, p + 1)
+            val (v, afterVal) = parseValue(s, p)
+            out[key] = v
+            p = skipWs(s, afterVal)
+            when {
+                p < s.length && s[p] == ',' -> p++
+                p < s.length && s[p] == '}' -> return out to (p + 1)
+                else -> error("bad object")
+            }
+        }
+    }
+
+    private fun parseArray(s: String, i: Int): Pair<List<Any?>, Int> {
+        var p = i + 1
+        val out = ArrayList<Any?>()
+        p = skipWs(s, p)
+        if (p < s.length && s[p] == ']') return out to (p + 1)
+        while (true) {
+            val (v, after) = parseValue(s, skipWs(s, p))
+            out.add(v)
+            p = skipWs(s, after)
+            when {
+                p < s.length && s[p] == ',' -> p++
+                p < s.length && s[p] == ']' -> return out to (p + 1)
+                else -> error("bad array")
+            }
+        }
+    }
+
+    private fun parseString(s: String, i: Int): Pair<String, Int> {
+        require(s[i] == '"')
+        var p = i + 1
+        val out = StringBuilder()
+        while (p < s.length) {
+            val c = s[p++]
+            when (c) {
+                '"' -> return out.toString() to p
+                '\\' -> {
+                    require(p < s.length)
+                    when (val e = s[p++]) {
+                        '"', '\\', '/' -> out.append(e)
+                        'b' -> out.append('\b')
+                        'f' -> out.append('\u000C')
+                        'n' -> out.append('\n')
+                        'r' -> out.append('\r')
+                        't' -> out.append('\t')
+                        'u' -> {
+                            require(p + 4 <= s.length)
+                            out.append(s.substring(p, p + 4).toInt(16).toChar())
+                            p += 4
+                        }
+                        else -> error("bad escape")
+                    }
+                }
+                else -> out.append(c)
+            }
+        }
+        error("unterminated string")
+    }
+
+    private fun parseNumber(s: String, i: Int): Pair<Number, Int> {
+        var p = i
+        if (p < s.length && s[p] == '-') p++
+        require(p < s.length && s[p].isDigit())
+        if (s[p] == '0') {
+            p++
+            require(p >= s.length || !s[p].isDigit())
+        } else {
+            while (p < s.length && s[p].isDigit()) p++
+        }
+        var isFloat = false
+        if (p < s.length && s[p] == '.') {
+            isFloat = true
+            p++
+            val frac = p
+            while (p < s.length && s[p].isDigit()) p++
+            require(p > frac)
+        }
+        if (p < s.length && (s[p] == 'e' || s[p] == 'E')) {
+            isFloat = true
+            p++
+            if (p < s.length && (s[p] == '+' || s[p] == '-')) p++
+            val exp = p
+            while (p < s.length && s[p].isDigit()) p++
+            require(p > exp)
+        }
+        val lit = s.substring(i, p)
+        if (isFloat) return lit.toDouble() to p
+        val asLong = lit.toLong()
+        return (if (asLong in Int.MIN_VALUE..Int.MAX_VALUE) asLong.toInt() else asLong) to p
+    }
+}
 
 fun sha256(data: ByteArray): ByteArray =
     java.security.MessageDigest.getInstance("SHA-256").digest(data)

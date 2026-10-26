@@ -9,3 +9,4 @@ Differences between the Python reference and the Kotlin phone build. A line is h
 | Key id | SHA-256 of the HMAC secret | SHA-256 of `kid:` + Ed25519 public keyset | The secret is not a public identifier. One-key-one-node still keys on this id. |
 | `to_m7` / `from_sim` | Lazy imports inside `core/claim_adapters.py` | Live in `:matching` and `:sim` | `:core` must not import upper modules. |
 | On-air JSON frames | `m0_transport/wire.py` | Wire v2 CBOR for signed bodies (`docs/WIRE.md`) | Phones do not interoperate with the Python process. |
+| M10 patterns | Python `re` flag `(?U)` and an unescaped `}` in `\{name}` | Same classes without `(?U)`; closing brace escaped | Android ICU rejects `(?U)` and a bare `}` (`PatternSyntaxException` while loading `JustifyKt`). Devanagari stays in the place pattern explicitly. |

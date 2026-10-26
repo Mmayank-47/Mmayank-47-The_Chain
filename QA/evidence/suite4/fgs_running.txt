@@ -1,0 +1,7 @@
+﻿adb : adb.exe: unknown command dumpsys
+At line:6 char:1
++ adb -s $dev dumpsys activity services org.thechain.app 2>&1 | Out-Fil ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (adb.exe: unknown command dumpsys:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 

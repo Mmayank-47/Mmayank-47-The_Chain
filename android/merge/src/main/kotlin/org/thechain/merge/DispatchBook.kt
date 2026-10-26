@@ -5,10 +5,6 @@ import org.thechain.core.Hlc
 import org.thechain.core.LwwMap
 import kotlin.math.max
 
-fun aliveMs(createdWallMs: Long, beatMs: Long): Long = max(createdWallMs, beatMs)
-
-fun isLive(alive: Long, nowMs: Long, leaseMs: Long): Boolean = nowMs - alive <= leaseMs
-
 fun <T> expired(recs: Iterable<T>, nowMs: Long, leaseMs: Long, state: (T) -> DispatchState, alive: (T) -> Long, did: (T) -> String): List<T> =
     recs.filter { state(it) != DispatchState.RESOLVED && !isLive(alive(it), nowMs, leaseMs) }.sortedBy { did(it) }
 
@@ -28,7 +24,7 @@ data class Rec(
     var created: Hlc? = null,
     var beatMs: Long = 0,
 ) {
-    fun aliveMs(): Long = aliveMs(created?.wall ?: 0, beatMs)
+    fun aliveMs(): Long = org.thechain.merge.aliveMs(created?.wall ?: 0L, beatMs)
 }
 
 data class Plan(

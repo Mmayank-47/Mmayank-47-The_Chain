@@ -7,6 +7,8 @@ kotlin {
 }
 
 dependencies {
+    api(project(":core"))
+    api(project(":battery"))
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.platform.launcher)
     testImplementation(testFixtures(project(":core")))

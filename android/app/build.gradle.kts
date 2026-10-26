@@ -26,13 +26,28 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
+    signingConfigs {
+        // Local release smoke: reuse the debug keystore when present.
+        val debugStore = signingConfigs.findByName("debug")
+        create("releaseLocal") {
+            if (debugStore != null) {
+                storeFile = debugStore.storeFile
+                storePassword = debugStore.storePassword
+                keyAlias = debugStore.keyAlias
+                keyPassword = debugStore.keyPassword
+            }
+        }
+    }
+
     buildTypes {
         debug {
             buildConfigField("boolean", "DEV_COMPONENTS", "false")
         }
         release {
             isMinifyEnabled = true
+            isShrinkResources = true
             buildConfigField("boolean", "DEV_COMPONENTS", "false")
+            signingConfig = signingConfigs.getByName("releaseLocal")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
@@ -56,10 +71,25 @@ kotlin {
 
 dependencies {
     implementation(project(":node"))
+    implementation(project(":identity"))
+    implementation(project(":hazard"))
+    implementation("androidx.compose.material:material-icons-extended")
+    implementation("androidx.appcompat:appcompat:1.7.0")
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
     implementation(libs.compose.material3)
+    implementation(libs.compose.ui.tooling.preview)
     implementation(libs.activity.compose)
+    implementation(libs.lifecycle.viewmodel)
+    implementation(libs.lifecycle.runtime)
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
+    implementation("androidx.fragment:fragment-ktx:1.8.5")
+    implementation("androidx.biometric:biometric:1.1.0")
+    implementation("androidx.core:core-ktx:1.15.0")
+    implementation(libs.nearby)
+    implementation("org.maplibre.gl:android-sdk:13.7.1")
+    implementation(libs.work)
+    implementation(libs.coroutines.android)
 }
 
 tasks.register("assertShippingClasspath") {
@@ -72,4 +102,8 @@ tasks.register("assertShippingClasspath") {
             error("shipping runtime can see ${banned.joinToString()}")
         }
     }
+}
+
+tasks.named("check") {
+    dependsOn("assertShippingClasspath")
 }

@@ -4,7 +4,18 @@ package org.thechain.core
  * Message-kind router. A handler that throws cannot starve the others.
  * Hazards and vouches have no kind of their own: they travel as m8.event.
  */
-val KINDS = listOf("m8.event", "m9.case", "m9.sealed", "m1.revoke", "m3.challenge", "m3.response")
+val KINDS = listOf(
+    "m8.event",
+    "m9.case",
+    "m9.pin",
+    "m9.card",
+    "m9.chat",
+    "m9.ack",
+    "m9.sealed",
+    "m1.revoke",
+    "m3.challenge",
+    "m3.response",
+)
 
 fun interface Handler {
     fun on(message: Message)

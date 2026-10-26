@@ -10,7 +10,7 @@ Taken from `core/types.py`, `core/crdt.py`, `core/bloom.py`, `core/ratelimit.py`
 - `MAX_DRIFT_MS` = 300_000. `MAX_COUNTER` = 2^20.
 - Claim limits: id length 1..64, absolute coordinate ≤ 1e7, radius 0..5000, time ≥ 0, parsed canonical JSON ≤ 900 bytes.
 - Critical features for `need_of`: `not_breathing`, `severe_bleeding`, `unconscious`. Those, or a `medic` tag, need a medic. A `boat` tag needs a boat. Otherwise the need is absent.
-- Dispatcher kinds: `m8.event`, `m9.case`, `m9.sealed`, `m1.revoke`, `m3.challenge`, `m3.response`.
+- Dispatcher kinds: `m8.event`, `m9.case`, `m9.pin`, `m9.card`, `m9.chat`, `m9.ack`, `m9.sealed`, `m1.revoke`, `m3.challenge`, `m3.response`. `m9.pin` is the GNSS fix sent with a help request. `m9.card` is name+occupation after handshake. `m9.chat` is a short message addressed to one saved contact. `m9.ack` is the mesh-wide Accept acknowledgement that ends the distress window.
 
 ## HLC
 

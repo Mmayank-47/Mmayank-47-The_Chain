@@ -1,0 +1,13 @@
+﻿M5 boot + handshake path (2026-10-26)
+device: 001613558002048
+pid: 23166
+
+10-26 10:14:13.474 23166 23166 I PeerEnrollment: exported pubkey to /data/user/0/org.thechain.app/files/me.pub nodeId=n-2ae98e252a712b96
+10-26 10:14:13.496 23166 23166 I ChainFgs: PhoneNode ready id=n-2ae98e252a712b96 hardwareWrap=true enrolledPeers=0 hs=on
+10-26 10:14:14.736 23166 23166 I NearbyRadio: advertising as n-2ae98e252a712b96
+10-26 10:14:14.778 23166 23166 I NearbyRadio: discovering
+
+force-stop → relaunch nodeId persistence:
+nodeId_before=n-2ae98e252a712b96
+nodeId_after=n-2ae98e252a712b96
+match=True

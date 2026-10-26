@@ -8,6 +8,7 @@ kotlin {
 
 dependencies {
     api(project(":core"))
+    implementation(project(":transport"))
     testImplementation(project(":crypto-fake"))
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.platform.launcher)

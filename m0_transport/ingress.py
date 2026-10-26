@@ -37,6 +37,10 @@ from core.types import Message, Priority, canonical, event_priority
 KIND_PRIORITY: Dict[str, Optional[Priority]] = {
     "m8.event": None,
     "m9.case": Priority.DISTRESS,
+    "m9.pin": Priority.DISTRESS,
+    "m9.card": Priority.CHATTER,
+    "m9.chat": Priority.CHATTER,
+    "m9.ack": Priority.DISTRESS,
     "m9.sealed": Priority.DISPATCH,
     "m1.revoke": Priority.DISPATCH,
     "m3.challenge": Priority.DISPATCH,

@@ -1,0 +1,87 @@
+﻿--------- beginning of main
+10-26 10:14:12.425 23166 23166 I rg.thechain.app: Late-enabling -Xcheck:jni
+10-26 10:14:12.458 23166 23166 I rg.thechain.app: Using generational CollectorTypeCMC GC.
+10-26 10:14:12.469 23166 23166 D nativeloader: Load libframework-connectivity-tiramisu-jni.so using APEX ns com_android_tethering for caller /apex/com.android.tethering/javalib/framework-connectivity-t.jar: ok
+--------- beginning of system
+10-26 10:14:12.510 23166 23166 D NtScrollerManagerImpl: init NtScrollerManagerImpl
+10-26 10:14:12.863 23166 23166 D nativeloader: Configuring clns-9 for other apk /data/app/~~f9BxyMdIx8629_UZKkWgLw==/org.thechain.app--8h9EipX0XPAnDyu_cDsPw==/base.apk. target_sdk_version=35, uses_libraries=, library_path=/data/app/~~f9BxyMdIx8629_UZKkWgLw==/org.thechain.app--8h9EipX0XPAnDyu_cDsPw==/lib/arm64:/data/app/~~f9BxyMdIx8629_UZKkWgLw==/org.thechain.app--8h9EipX0XPAnDyu_cDsPw==/base.apk!/lib/arm64-v8a, permitted_path=/data:/mnt/expand:/data/user/0/org.thechain.app
+10-26 10:14:12.864 23166 23166 D CompatChangeReporter: Compat change id reported: 202956589; UID 10259; state: ENABLED
+10-26 10:14:12.866 23166 23166 I rg.thechain.app: AssetManager2(0xb400007bd7c81318) locale list changing from [] to [en-GB]
+10-26 10:14:12.868 23166 23166 I Perf    : Connecting to perf service.
+10-26 10:14:12.871 23166 23166 V GraphicsEnvironment: Currently set values for:
+10-26 10:14:12.871 23166 23166 V GraphicsEnvironment:   angle_gl_driver_selection_pkgs=[com.android.angle, com.linecorp.b612.android, com.campmobile.snow, com.google.android.apps.tachyon]
+10-26 10:14:12.871 23166 23166 V GraphicsEnvironment:   angle_gl_driver_selection_values=[angle, native, native, native]
+10-26 10:14:12.871 23166 23166 V GraphicsEnvironment: org.thechain.app is not listed in per-application setting
+10-26 10:14:12.871 23166 23166 V GraphicsEnvironment: ANGLE allowlist from config: 
+10-26 10:14:12.871 23166 23166 V GraphicsEnvironment: org.thechain.app is not listed in ANGLE allowlist or settings, returning default
+10-26 10:14:12.872 23166 23166 V GraphicsEnvironment: Neither updatable production driver nor prerelease driver is supported.
+10-26 10:14:12.883 23166 23166 D CompatChangeReporter: Compat change id reported: 279646685; UID 10259; state: ENABLED
+10-26 10:14:12.887 23166 23166 D SceneManager: init SceneManager
+10-26 10:14:12.887 23166 23166 D WM-WrkMgrInitializer: Initializing WorkManager with default configuration.
+10-26 10:14:12.906 23166 23166 D WM-PackageManagerHelper: Skipping component enablement for androidx.work.impl.background.systemjob.SystemJobService
+10-26 10:14:12.906 23166 23166 D WM-Schedulers: Created SystemJobScheduler and enabled SystemJobService
+10-26 10:14:12.916 23166 23214 D WM-ForceStopRunnable: The default process name was not specified.
+10-26 10:14:12.918 23166 23214 D WM-ForceStopRunnable: Performing cleanup operations.
+10-26 10:14:12.923 23166 23214 E ashmem  : Pinning is deprecated since Android Q. Please use trim or other methods.
+10-26 10:14:12.928 23166 23166 I BootReceiver: boot action=android.intent.action.BOOT_COMPLETED — enqueue service restart
+10-26 10:14:12.941 23166 23216 I DisplayManager: Choreographer implicitly registered for the refresh rate.
+10-26 10:14:12.942 23166 23166 I rg.thechain.app: AssetManager2(0xb400007bd7c7e758) locale list changing from [] to [en-GB]
+10-26 10:14:12.944 23166 23216 I AdrenoGLES-0: QUALCOMM build                   : f1c98d72b3, I45c5214ffd
+10-26 10:14:12.944 23166 23216 I AdrenoGLES-0: Build Date                       : 07/11/25
+10-26 10:14:12.944 23166 23216 I AdrenoGLES-0: OpenGL ES Shader Compiler Version: E031.47.18.36
+10-26 10:14:12.944 23166 23216 I AdrenoGLES-0: Local Branch                     : 
+10-26 10:14:12.944 23166 23216 I AdrenoGLES-0: Remote Branch                    : refs/tags/AU_LINUX_ANDROID_LA.VENDOR.14.3.0.11.00.00.973.839
+10-26 10:14:12.944 23166 23216 I AdrenoGLES-0: Remote Branch                    : NONE
+10-26 10:14:12.944 23166 23216 I AdrenoGLES-0: Reconstruct Branch               : NOTHING
+10-26 10:14:12.944 23166 23216 I AdrenoGLES-0: Build Config                     : S L 16.1.2 AArch64
+10-26 10:14:12.944 23166 23216 I AdrenoGLES-0: Driver Path                      : /vendor/lib64/egl/libGLESv2_adreno.so
+10-26 10:14:12.944 23166 23216 I AdrenoGLES-0: Driver Version                   : 0800.49
+10-26 10:14:12.944 23166 23216 I AdrenoGLES-0: Process Name                     : org.thechain.app
+10-26 10:14:12.950 23166 23216 I AdrenoGLES-0: PFP: 0x01100079, ME: 0x00000000
+10-26 10:14:12.955 23166 23214 D WM-ForceStopRunnable: Application was force-stopped, rescheduling.
+10-26 10:14:12.957 23166 23216 I AdrenoUtils: <ReadGpuID:366>: Reading chip ID through GSL
+10-26 10:14:12.969 23166 23166 D NtViewImpl: init NtViewImpl
+10-26 10:14:12.974 23166 23166 D CompatChangeReporter: Compat change id reported: 309578419; UID 10259; state: ENABLED
+10-26 10:14:12.975 23166 23166 D DesktopModeFlags: Toggle override initialized to: OVERRIDE_UNSET
+10-26 10:14:12.997 23166 23220 W JobInfo : Requested important-while-foreground flag for job3 is ignored and takes no effect
+10-26 10:14:12.997 23166 23166 D CompatChangeReporter: Compat change id reported: 352594277; UID 10259; state: ENABLED
+10-26 10:14:12.998 23166 23220 D CompatChangeReporter: Compat change id reported: 311402873; UID 10259; state: ENABLED
+10-26 10:14:12.998 23166 23220 D CompatChangeReporter: Compat change id reported: 323349338; UID 10259; state: ENABLED
+10-26 10:14:12.998 23166 23220 D WM-SystemJobScheduler: Scheduling work ID be2610da-0b91-4c95-8906-bbf068b61032Job ID 3
+10-26 10:14:13.003 23166 23166 D CompatChangeReporter: Compat change id reported: 349153669; UID 10259; state: ENABLED
+10-26 10:14:13.004 23166 23222 E HWUI    : attachRenderThreadToJvm
+10-26 10:14:13.004 23166 23222 E HWUI    : AM IS NOT NULL!
+10-26 10:14:13.006 23166 23223 E HWUI    : attachRenderThreadToJvm
+10-26 10:14:13.006 23166 23223 E HWUI    : AM IS NOT NULL!
+10-26 10:14:13.007 23166 23220 D WM-GreedyScheduler: Starting work for be2610da-0b91-4c95-8906-bbf068b61032
+10-26 10:14:13.017 23166 23224 D WM-Processor: Processor: processing WorkGenerationalId(workSpecId=be2610da-0b91-4c95-8906-bbf068b61032, generation=0)
+10-26 10:14:13.042 23166 23224 D WM-PackageManagerHelper: androidx.work.impl.background.systemalarm.RescheduleReceiver enabled
+10-26 10:14:13.474 23166 23166 I PeerEnrollment: exported pubkey to /data/user/0/org.thechain.app/files/me.pub nodeId=n-2ae98e252a712b96
+10-26 10:14:13.496 23166 23166 I ChainFgs: PhoneNode ready id=n-2ae98e252a712b96 hardwareWrap=true enrolledPeers=0 hs=on
+10-26 10:14:13.536 23166 23186 I rg.thechain.app: Compiler allocated 5194KB to compile void android.view.ViewRootImpl.performTraversals()
+10-26 10:14:13.742 23166 23166 W rg.thechain.app: Method boolean androidx.compose.runtime.snapshots.SnapshotStateList.conditionalUpdate(boolean, kotlin.jvm.functions.Function1) failed lock verification and will run slower.
+10-26 10:14:13.742 23166 23166 W rg.thechain.app: Common causes for lock verification issues are non-optimized dex code
+10-26 10:14:13.742 23166 23166 W rg.thechain.app: and incorrect proguard optimizations.
+10-26 10:14:13.742 23166 23166 W rg.thechain.app: Method boolean androidx.compose.runtime.snapshots.SnapshotStateList.conditionalUpdate$default(androidx.compose.runtime.snapshots.SnapshotStateList, boolean, kotlin.jvm.functions.Function1, int, java.lang.Object) failed lock verification and will run slower.
+10-26 10:14:13.742 23166 23166 W rg.thechain.app: Method java.lang.Object androidx.compose.runtime.snapshots.SnapshotStateList.mutate(kotlin.jvm.functions.Function1) failed lock verification and will run slower.
+10-26 10:14:13.742 23166 23166 W rg.thechain.app: Method void androidx.compose.runtime.snapshots.SnapshotStateList.update(boolean, kotlin.jvm.functions.Function1) failed lock verification and will run slower.
+10-26 10:14:13.742 23166 23166 W rg.thechain.app: Method void androidx.compose.runtime.snapshots.SnapshotStateList.update$default(androidx.compose.runtime.snapshots.SnapshotStateList, boolean, kotlin.jvm.functions.Function1, int, java.lang.Object) failed lock verification and will run slower.
+10-26 10:14:13.813 23166 23166 D NtViewRootImpl: mPopUpViewOffsets: offset=(0.0, 0.0), scale=(1.0, 1.0)
+10-26 10:14:13.862 23166 23166 D WM-WorkerWrapper: Starting work for org.thechain.app.RestartMeshWorker
+10-26 10:14:13.863 23166 23268 I RestartMeshWorker: restarting ChainForegroundService
+10-26 10:14:13.874 23166 23166 D WM-SystemJobService: onStartJob for WorkGenerationalId(workSpecId=be2610da-0b91-4c95-8906-bbf068b61032, generation=0)
+10-26 10:14:13.881 23166 23199 I HWUI    : Davey! duration=845ms; Flags=1, FrameTimelineVsyncId=245037231, IntendedVsync=627515553393539, Vsync=627516036726737, InputEventId=0, HandleInputStart=627516041420255, AnimationStart=627516041420984, PerformTraversalsStart=627516041421349, DrawStart=627516373909838, FrameDeadline=627515570060205, FrameStartTime=627516040993380, FrameInterval=16666662, WorkloadTarget=16666666, SyncQueued=627516385768484, SyncStart=627516385973848, IssueDrawCommandsStart=627516386075307, SwapBuffers=627516397678640, FrameCompleted=627516399150150, DequeueBufferDuration=12968, QueueBufferDuration=366875, GpuCompleted=627516399150150, SwapBuffersCompleted=627516399021869, DisplayPresentTime=0, CommandSubmissionCompleted=627516397678640, 
+10-26 10:14:13.881 23166 23220 D WM-Processor: Work WorkGenerationalId(workSpecId=be2610da-0b91-4c95-8906-bbf068b61032, generation=0) is already enqueued for processing
+10-26 10:14:13.886 23166 23166 D CompatChangeReporter: Compat change id reported: 270674727; UID 10259; state: ENABLED
+10-26 10:14:13.908 23166 23218 I WM-WorkerWrapper: Worker result SUCCESS for Work [ id=be2610da-0b91-4c95-8906-bbf068b61032, tags={ org.thechain.app.RestartMeshWorker } ]
+10-26 10:14:13.912 23166 23218 D WM-PackageManagerHelper: androidx.work.impl.background.systemalarm.RescheduleReceiver disabled
+10-26 10:14:13.913 23166 23166 D NtViewRootImpl: mPopUpViewOffsets: offset=(0.0, 0.0), scale=(1.0, 1.0)
+10-26 10:14:13.914 23166 23166 D WM-Processor: Processor be2610da-0b91-4c95-8906-bbf068b61032 executed; reschedule = false
+10-26 10:14:13.915 23166 23166 D WM-SystemJobService: be2610da-0b91-4c95-8906-bbf068b61032 executed on JobScheduler
+10-26 10:14:13.919 23166 23214 D WM-GreedyScheduler: Cancelling work ID be2610da-0b91-4c95-8906-bbf068b61032
+10-26 10:14:13.929 23166 23166 D InsetsController: hide(ime(), fromIme=false)
+10-26 10:14:13.929 23166 23166 I ImeTracker: org.thechain.app:e09896f2: onCancelled at PHASE_CLIENT_ALREADY_HIDDEN
+10-26 10:14:14.736 23166 23166 I NearbyRadio: advertising as n-2ae98e252a712b96
+10-26 10:14:14.778 23166 23166 D NearbyConnections: Discovery started with NFC requested, but there is no NfcDispatcher available. Discovery will continue over other mediums instead. To use NFC discovery, pass in an Activity when calling Nearby.getConnectionsClient().
+10-26 10:14:14.778 23166 23166 I NearbyRadio: discovering
+10-26 10:14:18.027 23166 23282 D ProfileInstaller: Installing profile for org.thechain.app

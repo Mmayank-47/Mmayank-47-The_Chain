@@ -1,0 +1,21 @@
+Accessibility checks — 2026-10-26 — device 001613558002048 (lcd_density=420 → 2.625x)
+
+TalkBack / contentDescription (uiautomator_help.xml + uiautomator_respond.xml):
+- Help tab, Respond tab, Map tab, Mesh tab, Me tab — present on NavigationBarItem
+- help_text — OutlinedTextField
+- Next — Help primary step-0 button
+- OEM screen: "Allow unrestricted battery", "Continue without unrestricted battery"
+- Respond Accept uses contentDescription Accept_<claimId> when claims present (empty list → Empty state)
+
+Touch target size:
+- Nav items bounds height 168px / 2.625 = 64dp (requirement met)
+- Help Next / Send / Respond Accept / OEM / Me OEM entry: Modifier.heightIn(min = 64.dp)
+
+Text size:
+- Primary UI copy ≥14sp; nav labels 14sp
+- Only DevBadge uses 12sp and is gated on BuildConfig.DEV_COMPONENTS (false in debug+release)
+
+Gaps fixed this session:
+- Help Next/Send raised 56→64dp + contentDescription
+- Respond Accept 52→64dp; meta text 13→14sp
+- Me enrollment note 13→14sp; OEM entry + battery % line added

@@ -1,0 +1,58 @@
+﻿ACTIVITY MANAGER SERVICES (dumpsys activity services)
+  User 0 active services:
+  * ServiceRecord{1d17a09 u0 org.thechain.app/.ChainForegroundService c:org.thechain.app}
+    intent={cmp=org.thechain.app/.ChainForegroundService}
+    packageName=org.thechain.app
+    processName=org.thechain.app
+    targetSdkVersion=35
+    baseDir=/data/app/~~sw-HuCOTyplIIWGXOUjWoQ==/org.thechain.app-nQ0TMdqGF92-popDif5yog==/base.apk
+    dataDir=/data/user/0/org.thechain.app
+    app=ProcessRecord{4c0b1e 2329:org.thechain.app/u0a259}
+    useNewWiuLogic_forCapabilities()=true
+    useNewWiuLogic_forStart()=true
+    useNewBfslLogic()=true
+    mAllowWiu_noBinding=PROC_STATE_TOP
+    mAllowWiu_inBindService=PROC_STATE_TOP
+    mAllowWiu_byBindings=PROC_STATE_TOP
+    getFgsAllowWiu_legacy=PROC_STATE_TOP
+    getFgsAllowWiu_new=PROC_STATE_TOP
+    getFgsAllowWiu_forStart=PROC_STATE_TOP
+    getFgsAllowWiu_forCapabilities=PROC_STATE_TOP
+    allowUiJobScheduling=true
+    recentCallingPackage=org.thechain.app
+    recentCallingUid=10259
+    mAllowStart_noBinding=PROC_STATE_TOP
+    mAllowStart_inBindService=PROC_STATE_TOP
+    mAllowStart_byBindings=PROC_STATE_TOP
+    getFgsAllowStart_legacy=PROC_STATE_TOP
+    getFgsAllowStart_new=PROC_STATE_TOP
+    getFgsAllowStart=PROC_STATE_TOP
+    startForegroundCount=1
+    infoAllowStartForeground=[callingPackage: org.thechain.app; callingUid: 10259; uidState: TOP ; uidBFSL: [BFSL]; intent: Intent { xflg=0x4 cmp=org.thechain.app/.ChainForegroundService }; code:PROC_STATE_TOP; tempAllowListReason:<null>; allowWiu:12; targetSdkVersion:35; callerTargetSdkVersion:35; startForegroundCount:0; bindFromPackage:null: isBindService:true]
+    isForeground=true foregroundId=47 types=0x00000010 foregroundNoti=Notification(channel=chain_mesh shortcut=null contentView=null vibrate=null sound=null defaults=0 flags=ONGOING_EVENT|ONLY_ALERT_ONCE|NO_CLEAR|FOREGROUND_SERVICE color=0x00000000 category=service vis=PRIVATE)
+    createTime=-1m24s592ms startingBgTimeout=--
+    lastActivity=-1m22s917ms restartTime=-1m24s591ms createdFromFg=true
+    startRequested=true delayedStop=false stopIfKilled=false callStart=true lastStartId=3
+ startCommandResult=1
+    Bindings:
+    * IntentBindRecord{5979764 CREATE}:
+      intent={xflg=0x4 cmp=org.thechain.app/.ChainForegroundService}
+      binder=android.os.BinderProxy@d041dcd
+      requested=true received=true hasBound=true doRebind=false
+      * Client AppBindRecord{5635682 ProcessRecord{4c0b1e 2329:org.thechain.app/u0a259}}
+        Per-process Connections:
+          ConnectionRecord{1e28e2f u0 CR org.thechain.app/.ChainForegroundService:@555e40e flags=0x1}
+          ConnectionRecord{55ffc6c u0 CR org.thechain.app/.ChainForegroundService:@555e40e flags=0x1}
+    All Connections:
+      ConnectionRecord{1e28e2f u0 CR org.thechain.app/.ChainForegroundService:@555e40e flags=0x1}
+      ConnectionRecord{55ffc6c u0 CR org.thechain.app/.ChainForegroundService:@555e40e flags=0x1}
+
+  Connection bindings to services:
+  * ConnectionRecord{1e28e2f u0 CR org.thechain.app/.ChainForegroundService:@555e40e flags=0x1}
+    binding=AppBindRecord{5635682 org.thechain.app/.ChainForegroundService:org.thechain.app}
+    activity=ActivityRecord{94587153 u0 org.thechain.app/.MainActivity t2957}
+    conn=android.os.BinderProxy@555e40e flags=0x1
+  * ConnectionRecord{55ffc6c u0 CR org.thechain.app/.ChainForegroundService:@555e40e flags=0x1}
+    binding=AppBindRecord{5635682 org.thechain.app/.ChainForegroundService:org.thechain.app}
+    activity=ActivityRecord{94587153 u0 org.thechain.app/.MainActivity t2957}
+    conn=android.os.BinderProxy@555e40e flags=0x1

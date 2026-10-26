@@ -13,12 +13,18 @@ import org.thechain.core.Signer
 import org.thechain.core.sha256Hex
 import java.io.ByteArrayOutputStream
 
-/** A device key the registry can enroll. Private material never leaves [sign]. */
-interface DeviceKey {
+/**
+ * Hardware-bound device key (Android Keystore / StrongBox on a phone).
+ * Private material never leaves [sign].
+ */
+interface Keystore {
     val keyId: String
     fun sign(data: ByteArray): String
     fun verify(data: ByteArray, sig: String): Boolean
 }
+
+/** Alias kept for call sites that still say DeviceKey. */
+typealias DeviceKey = Keystore
 
 object TinkBootstrap {
     @Volatile private var ready = false
@@ -39,7 +45,7 @@ object TinkBootstrap {
  * [keyId] is sha256("kid:" || publicKeyset) truncated to 16 hex chars.
  * Android Keystore wrapping of the private keyset happens in :app; this object is the primitive.
  */
-class Ed25519DeviceKey private constructor(private val privateHandle: KeysetHandle) : DeviceKey {
+class Ed25519DeviceKey private constructor(private val privateHandle: KeysetHandle) : Keystore {
     val publicKeyset: ByteArray
     override val keyId: String
 
@@ -100,12 +106,12 @@ private fun String.hexToBytes(): ByteArray {
  * [sign] only works for keys enrolled on this phone (peers are verify-only).
  */
 class Registry(val rootCheck: (keyId: String, attestation: String?) -> Boolean) : Signer {
-    private class Entry(val keyId: String, val publicKeyset: ByteArray, val local: DeviceKey?)
+    private class Entry(val keyId: String, val publicKeyset: ByteArray, val local: Keystore?)
 
     private val pub = linkedMapOf<String, Entry>()
     private val byKey = linkedMapOf<String, String>()
 
-    fun enroll(node: String, key: DeviceKey, attestation: String?, publicKeyset: ByteArray = ByteArray(0)): Boolean {
+    fun enroll(node: String, key: Keystore, attestation: String?, publicKeyset: ByteArray = ByteArray(0)): Boolean {
         if (node.isEmpty() || !rootCheck(key.keyId, attestation)) return false
         if (byKey[key.keyId]?.let { it != node } == true) return false
         val cur = pub[node]
@@ -116,7 +122,25 @@ class Registry(val rootCheck: (keyId: String, attestation: String?) -> Boolean) 
         return true
     }
 
+    /**
+     * Verify-only peer enrollment (no local private key). Used after QR / debug-file import.
+     * Unenrolled peers stay on the stranger lane until this succeeds.
+     */
+    fun enrollPublic(node: String, publicKeyset: ByteArray, attestation: String? = "peer"): Boolean {
+        if (node.isEmpty() || publicKeyset.isEmpty()) return false
+        val keyId = sha256Hex("kid:".toByteArray(Charsets.UTF_8) + publicKeyset).substring(0, 16)
+        if (!rootCheck(keyId, attestation)) return false
+        if (byKey[keyId]?.let { it != node } == true) return false
+        val cur = pub[node]
+        if (cur != null && cur.keyId != keyId) return false
+        pub[node] = Entry(keyId, publicKeyset.copyOf(), null)
+        byKey[keyId] = node
+        return true
+    }
+
     fun enrolled(node: String): Boolean = node in pub
+
+    fun publicKeysetOf(node: String): ByteArray? = pub[node]?.publicKeyset?.copyOf()
 
     fun keyIdOf(node: String): String? = pub[node]?.keyId
 

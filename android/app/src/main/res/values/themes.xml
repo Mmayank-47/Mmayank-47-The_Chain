@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.TheChain" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="android:statusBarColor">#FF004546</item>
+        <item name="android:navigationBarColor">#FFF7F6F2</item>
+        <item name="android:windowBackground">#FFF7F6F2</item>
+        <item name="android:windowLightNavigationBar">true</item>
+    </style>
+</resources>

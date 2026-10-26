@@ -13,7 +13,18 @@ from .types import Message
 
 # Must match m0_transport.ingress.KIND_PRIORITY (a test pins this). Hazards and vouches have no
 # kind of their own: they travel as m8.event (see m8_merge.kinds).
-KINDS = ("m8.event", "m9.case", "m9.sealed", "m1.revoke", "m3.challenge", "m3.response")
+KINDS = (
+    "m8.event",
+    "m9.case",
+    "m9.pin",
+    "m9.card",
+    "m9.chat",
+    "m9.ack",
+    "m9.sealed",
+    "m1.revoke",
+    "m3.challenge",
+    "m3.response",
+)
 
 Handler = Callable[[Message], None]
 

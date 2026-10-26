@@ -1,71 +1,34 @@
-# The Chain - Project Progress (PROGRESS.md)
+# The Chain — Kotlin rewrite progress
 
-## Phase 0: Baseline & Hygiene Verification (Completed)
-- **Codebase Discovery**: Examined architecture across `core/`, `m0_transport/` through `m11_redteam/`, `phone/` (`PhoneNode`), `sim/`, `tests/`, and `frontend/`.
-- **Pre-existing Defects Resolved**:
-  - `phone/persistence.py`: Fixed `win.bitmap` access by serializing sliding window seen set `_seen: Set[int]`.
-  - `m0_transport/dtn.py`: Added default timestamp `now: float = 0.0` to `CarryStore.add()`.
-  - `Makefile`: Added `gateway` package to `compile` target and created `gateway-test` target.
-  - `frontend/package.json`: Upgraded `esbuild` to `^0.28.0` to satisfy Vite 8 peer dependencies.
-- **Master Gate Verification**: `make check` passed with all existing tests green.
+Python packages remain the reference and offline simulator. The shipping product is the Gradle multi-module tree under `android/`.
 
----
+## Milestones
 
-## Phase 1: Backend Gateway (`gateway/`) (Completed)
-- **Contract Specification**: Authored comprehensive REST & SSE API specification in [`docs/API.md`](docs/API.md).
-- **Core Implementation**:
-  - Pure Python stdlib HTTP server using `http.server.ThreadingHTTPServer`.
-  - Thread-safe simulation state in `gateway/state.py` hosting 5 simulated `PhoneNode` instances (`node-me`, `node-relay-1`, `node-resp-1`, `node-neighbor-2`, `node-detour`) over `SimMedium`.
-  - Background tick loop (1.0 s) advancing real clock, routing frames, running anti-entropy gossip, and duty-cycle tracking.
-  - Full REST endpoints implemented: `/api/claims`, `/api/claims/{id}/broadcast`, `/api/claims/{id}` (abort), `/api/requests`, `/api/requests/{id}/respond`, `/api/mesh`, `/api/map`, `/api/me`, `/api/sim/*`.
-  - Server-Sent Events (SSE) `/api/events` delivering low-latency real-time mesh events (`claim_opened`, `dispatch_state`, `neighbor_up/down`, `partition_healed`, `drop_counter`).
-  - Production SPA static file hosting with SPA fallback serving `frontend/dist` directly from port 8000.
-- **Contract & Integration Tests**:
-  - Authored `tests/test_gateway.py` with 8 test cases verifying all endpoints, malformed input rejection, SSE streaming, and multi-node claim propagation.
-  - Full test suite passed (317 tests in 60s).
+| Tag | Status | Notes |
+|-----|--------|-------|
+| **M1** core + identity + merge on golden vectors | **done** | Canonical JSON, HLC, CRDT, Bloom, claims, Ed25519 registry, handshake, EventStore/Replica |
+| **M2** transport + parser + verify/trust/battery/hazard | **done** | IngressGuard, CarryStore, gossip, Wire v1 + WireV2 deterministic CBOR (float-ban), M2–M6 ports |
+| **M3** matching + privacy/ux + redteam; JVM mesh | **done** | CBBA, M9 public/sealed (Sealer), M10 EN/HI/MR, redteam vs `vectors/redteam.json`, PhoneNode + SimMedium 3-node claim |
+| **M4** Android app boots on a real phone | **done** | FGS + Keystore + Nearby + Compose shell on `001613558002048`; no INTERNET; evidence `QA/evidence/m4/` |
+| **M5** Nearby two-phone claim | **in progress** | Signed hs + Help/Respond claim path on 1 phone (`QA/evidence/m5/`); Suite 5 P1–P2 **blocked on 2nd phone** |
+| **M6** P1–P5 / 3-phone | open | |
+| **M7** OEM / battery / a11y / release | **in progress** | OEM protect UI + battery opt; BatteryManager→PhoneNode; a11y 64dp/TalkBack; HI/MR strings; `assembleRelease` R8+ABI splits; `QA/run_all.ps1` Suites 1–3; Suite 4 reboot/a11y/airplane evidence in `QA/evidence/suite4/` |
 
----
+## Evidence rule
 
-## Phase 2: Frontend Integration (Completed)
-- **Typed API Client & Real-Time SSE**:
-  - Created `frontend/src/api/client.ts` implementing strongly-typed client for all gateway endpoints.
-  - Created `frontend/src/api/events.ts` managing SSE connection lifecycle with exponential backoff auto-reconnect.
-  - Updated `frontend/src/types.ts` aligning data models with M2 parser, M3 verifier, and M10 rationale outputs.
-- **Screen Integration (Zero Mock Data)**:
-  - **HelpScreenStep2**: Integrated debounced live call to `POST /api/claims` (M2 NLP parsing, M3 confidence score, M10 rationale). Integrated Web Speech API with fallback message.
-  - **HelpScreenStep3**: Replaced `setTimeout` hop timer with live SSE `useMeshEvents` tracking real CRDT dispatch state (`PROPOSED` → `ACCEPTED` → `EN_ROUTE` → `RESOLVED`). Wired Abort button to `DELETE /api/claims/{id}`.
-  - **RespondScreen**: Replaced mock requests with live `GET /api/requests`. Connected Accept/Decline/Refer actions. Implemented M9 two-stage privacy disclosure unlocking sealed victim details upon acceptance.
-  - **MapScreen**: Connected to live `GET /api/map` rendering real M4 flood waterline, hazard grid cells, and coarse victim cells.
-  - **MeshScreen**: Connected to live `GET /api/mesh` rendering real neighbor links, airtime duty cycle, ingress guard drop counters, and interactive Dev Chaos controls (Partition, Heal, Blackhole attack, Kill Node).
-  - **MeScreen**: Connected to `GET/PUT /api/me` for profile persistence.
-  - **App Header**: Live battery percentage and mesh peer count from `api.getMesh()` and SSE events. Multi-language switcher (EN, HI, MR) passing `lang` query parameter to backend.
-- **Build & Quality Gates**:
-  - `npm run lint` clean (0 errors, 0 warnings).
-  - `npm run build` clean (compiled `dist/` in 277ms).
-  - Verified with `grep`: Zero mock arrays or fake network timers remain in the codebase.
+Suite 2 (JVM sim) proves logic only. Suite 5 on 2+ physical phones in airplane mode (BT+Wi‑Fi on) is the only proof the product works on phones. One device is currently attached over ADB (`001613558002048`); multi-phone cases stay OPEN until more hardware is connected.
 
----
+### Suite 2 evidence (2026-10-26, logic only)
 
-## Phase 3: Run on Phone & PWA Offline Support (Completed)
-- **PWA Capabilities**:
-  - Added `frontend/public/manifest.json` for standalone app installation.
-  - Added `frontend/public/sw.js` caching core assets offline while bypassing cache for live mesh API and SSE streams.
-- **Execution Environments Documented**:
-  - Authored [`docs/RUN_ON_PHONE.md`](docs/RUN_ON_PHONE.md) covering Laptop-Hosted (USB via `adb reverse` and local Wi-Fi LAN) and Standalone on-device via Termux.
-  - Created `scripts/termux_setup.sh` for one-command standalone Android Termux execution.
+`:sim:test` — 7/7 PASS (`MeshHarnessTest` + `Suite2SimTest`): partition/heal + AE head convergence; CBBA + DispatchBook single winner after heal; watchdog blackhole/greyhole failover; IngressGuard replay/forge/oversize; HLC + handshake clock-drift rejection; 50-node seeded soak (≥85% claim coverage). Not phone proof.
 
----
+### M7 / Suite 4 notes (2026-10-26)
 
-## Phase 4: Autonomous E2E Browser & Mobile Verification (Completed)
-- Authored `scripts/verify_e2e_browser.mjs` using headless Chrome at Android mobile viewport (360x800).
-- Successfully executed 9 end-to-end flows:
-  1. Navigation & Initial Telemetry Sync (95% battery, 2 direct peers).
-  2. Help Step 1 -> Step 2 category selection.
-  3. Step 2 live NLP parsing of natural language prompt with real M2/M3 confidence badges.
-  4. Step 2 -> Step 3 broadcast via mesh replica.
-  5. Step 3 live SSE broadcast tracking and abort capability.
-  6. Respond screen live request display, M10 rationale, and M9 sealed detail unlocking upon accept.
-  7. Tactical Map live flood waterline and hazard grid cell rendering.
-  8. Mesh screen direct radio peers, airtime duty cycle, and Dev Chaos controls (Partition & Heal).
-  9. Me screen profile persistence and EN/HI/MR language switching.
-- Verified **0 console errors** and saved 12 high-resolution screenshots to artifacts.
+- Reboot: nodeId `n-2ae98e252a712b96` + hardware Keystore stable across `adb reboot`. Unattended FGS on Nothing was delayed until task restore; BootReceiver now direct-starts FGS + expedited WM (`ChainBoot` tag).
+- Airplane + BT/Wi‑Fi: launch OK, FGS up, no crash (`QA/evidence/suite4/`).
+- Release: R8 + shrinkResources + ABI splits; no INTERNET in release aapt permissions.
+- Runners: `QA/run_all.ps1` / `QA/run_all.sh` + `QA/README.md`.
+
+## Vectors
+
+`tools/gen_vectors.py` dumps Python outputs into `vectors/*.json`. Kotlin tests load them via `vectors.dir`. Floats: absolute 1e-9. Discrete outputs: exact.
