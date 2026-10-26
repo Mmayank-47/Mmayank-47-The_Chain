@@ -1,0 +1,20 @@
+{
+  "plain": {
+    "path": [
+      "A",
+      "B"
+    ],
+    "length": 200.0,
+    "cost": 244.0,
+    "p_safe": 0.9,
+    "worst": 0.09999999999999998
+  },
+  "direct_after_hazard_is_none": false,
+  "detour_none_same_grid": false,
+  "risk": 0.748,
+  "flood_raised": true,
+  "flood_ignored_lower": false,
+  "flood_level": 1.2,
+  "p_flooded_under": 1.0,
+  "p_flooded_high": 4.1007053633065366e-43
+}

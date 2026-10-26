@@ -1,0 +1,21 @@
+{
+  "langs": {
+    "en": {
+      "text": "boat needed, 240 m away. Near Shivaji Nagar. Verified by 2 people. You're the nearest boat. Route via Ring Rd looks dry (96% safe). Your battery (80%) covers the trip. Turn back if water reaches 15 cm or battery falls below 15%.",
+      "risk": "low",
+      "abort": "Turn back if water reaches 15 cm or battery falls below 15%."
+    },
+    "hi": {
+      "text": "नाव चाहिए, 240 मीटर दूर। Shivaji Nagar के पास। 2 लोगों ने पुष्टि की। आप सबसे नज़दीकी नाव हैं। Ring Rd से रास्ता सूखा दिखता है (96% सुरक्षित)। आपकी बैटरी (80%) इस यात्रा के लिए काफ़ी है। अगर पानी 15 सेमी तक पहुँचे या बैटरी 15% से नीचे जाए तो लौट आइए।",
+      "risk": "low",
+      "abort": "अगर पानी 15 सेमी तक पहुँचे या बैटरी 15% से नीचे जाए तो लौट आइए।"
+    },
+    "mr": {
+      "text": "नाव हवे, 240 मीटर अंतरावर. Shivaji Nagar जवळ. 2 जणांनी पुष्टी केली. तुम्ही सर्वात जवळचे नाव आहात. Ring Rd मार्गे रस्ता कोरडा दिसतो (96% सुरक्षित). तुमची बॅटरी (80%) या प्रवासासाठी पुरेशी आहे. पाणी 15 सेमी पर्यंत पोहोचले किंवा बॅटरी 15% च्या खाली गेली असल्यास परत फिरा.",
+      "risk": "low",
+      "abort": "पाणी 15 सेमी पर्यंत पोहोचले किंवा बॅटरी 15% च्या खाली गेली असल्यास परत फिरा."
+    }
+  },
+  "risky": "medicine needed, 1.5 km away. Not independently verified yet. Route via ? is risky (55% safe). Battery is tight: 20% for this trip. Turn back if water reaches 15 cm or battery falls below 15%.",
+  "hold_is_none": true
+}

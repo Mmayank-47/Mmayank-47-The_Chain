@@ -1,0 +1,36 @@
+{
+  "categories": [
+    "minor",
+    "expectant",
+    "immediate",
+    "immediate",
+    "delayed",
+    "unknown"
+  ],
+  "claim_scores": [
+    {
+      "cat": "immediate",
+      "u": 1.0,
+      "g": 0.8
+    },
+    {
+      "cat": "unknown",
+      "u": 0.5524,
+      "g": 0.5
+    },
+    {
+      "cat": "unknown",
+      "u": 0.0,
+      "g": 0.0
+    }
+  ],
+  "cbba_rounds": 6,
+  "cbba_tasks": {
+    "a": "t1",
+    "b": "t2",
+    "c": null
+  },
+  "utility": 0.5146844444444445,
+  "gate": "dispatch",
+  "gate_low": "probe"
+}

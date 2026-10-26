@@ -1,0 +1,60 @@
+{
+  "scores": [
+    {
+      "id": "a",
+      "p": 0.7936875103245126,
+      "parts": {
+        "identity": 0.5,
+        "node_spread": -0.0,
+        "id_fanout": -0.0,
+        "dup_spot": -0.0,
+        "corroboration": 0.0,
+        "staleness": -0.0,
+        "credential": 0.0,
+        "challenge": 0.0
+      }
+    },
+    {
+      "id": "b",
+      "p": 0.00575049562063619,
+      "parts": {
+        "identity": -4.0,
+        "node_spread": -1.5,
+        "id_fanout": -0.5,
+        "dup_spot": -0.0,
+        "corroboration": 0.0,
+        "staleness": -0.0,
+        "credential": 0.0,
+        "challenge": 0.0
+      }
+    },
+    {
+      "id": "c",
+      "p": 0.945178837561174,
+      "parts": {
+        "identity": 0.5,
+        "node_spread": -0.0,
+        "id_fanout": -0.0,
+        "dup_spot": -0.0,
+        "corroboration": 1.5,
+        "staleness": -0.0,
+        "credential": 0.0,
+        "challenge": 0.0
+      }
+    },
+    {
+      "id": "d",
+      "p": 0.461898473775551,
+      "parts": {
+        "identity": 0.5,
+        "node_spread": -1.5,
+        "id_fanout": -0.0,
+        "dup_spot": -0.0,
+        "corroboration": 0.0,
+        "staleness": -0.0,
+        "credential": 0.0,
+        "challenge": 0.0
+      }
+    }
+  ]
+}

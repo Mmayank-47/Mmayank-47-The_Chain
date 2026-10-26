@@ -1,0 +1,789 @@
+{
+  "parses": [
+    {
+      "text": "We need 3 boats at Shivaji Nagar urgently",
+      "out": {
+        "kind": "need",
+        "capability_tags": [
+          "boat"
+        ],
+        "quantity": 3,
+        "urgency": 0.3,
+        "features": [],
+        "location_text": "shivaji nagar",
+        "language": "en",
+        "confidence": 0.85,
+        "source": "keyword"
+      }
+    },
+    {
+      "text": "mujhe insulin chahiye shivaji nagar mein",
+      "out": {
+        "kind": "need",
+        "capability_tags": [
+          "insulin"
+        ],
+        "quantity": null,
+        "urgency": 0.44,
+        "features": [
+          "medication_dependent"
+        ],
+        "location_text": "shivaji nagar",
+        "language": "hi",
+        "confidence": 0.85,
+        "source": "keyword"
+      }
+    },
+    {
+      "text": "please mujhe dawai chahiye",
+      "out": {
+        "kind": "need",
+        "capability_tags": [
+          "medicine"
+        ],
+        "quantity": null,
+        "urgency": 0.3,
+        "features": [],
+        "location_text": "",
+        "language": "mixed",
+        "confidence": 0.75,
+        "source": "keyword"
+      }
+    },
+    {
+      "text": "मुझे दवा चाहिए",
+      "out": {
+        "kind": "need",
+        "capability_tags": [
+          "medicine"
+        ],
+        "quantity": null,
+        "urgency": 0.3,
+        "features": [],
+        "location_text": "",
+        "language": "hi",
+        "confidence": 0.75,
+        "source": "keyword"
+      }
+    },
+    {
+      "text": "मला पाणी पाहिजे",
+      "out": {
+        "kind": "need",
+        "capability_tags": [
+          "water"
+        ],
+        "quantity": null,
+        "urgency": 0.3,
+        "features": [],
+        "location_text": "",
+        "language": "mr",
+        "confidence": 0.75,
+        "source": "keyword"
+      }
+    },
+    {
+      "text": "I have 2 boats available near the bridge",
+      "out": {
+        "kind": "offer",
+        "capability_tags": [
+          "boat"
+        ],
+        "quantity": 2,
+        "urgency": 0.0,
+        "features": [],
+        "location_text": "bridge",
+        "language": "en",
+        "confidence": 0.85,
+        "source": "keyword"
+      }
+    },
+    {
+      "text": "hamare paas paani nahi hai",
+      "out": {
+        "kind": "need",
+        "capability_tags": [
+          "water"
+        ],
+        "quantity": null,
+        "urgency": 0.3,
+        "features": [],
+        "location_text": "",
+        "language": "hi",
+        "confidence": 0.75,
+        "source": "keyword"
+      }
+    },
+    {
+      "text": "grandfather not breathing and bleeding, we are trapped on the roof",
+      "out": {
+        "kind": "need",
+        "capability_tags": [],
+        "quantity": null,
+        "urgency": 0.8582,
+        "features": [
+          "elderly",
+          "not_breathing",
+          "severe_bleeding",
+          "trapped"
+        ],
+        "location_text": "roof",
+        "language": "en",
+        "confidence": 0.75,
+        "source": "keyword"
+      }
+    },
+    {
+      "text": "need water",
+      "out": {
+        "kind": "need",
+        "capability_tags": [
+          "water"
+        ],
+        "quantity": null,
+        "urgency": 0.3,
+        "features": [],
+        "location_text": "",
+        "language": "en",
+        "confidence": 0.75,
+        "source": "keyword"
+      }
+    },
+    {
+      "text": "khoon beh raha hai bachao",
+      "out": {
+        "kind": "need",
+        "capability_tags": [
+          "unknown:raha"
+        ],
+        "quantity": null,
+        "urgency": 0.58,
+        "features": [
+          "severe_bleeding"
+        ],
+        "location_text": "",
+        "language": "hi",
+        "confidence": 0.65,
+        "source": "keyword"
+      }
+    },
+    {
+      "text": "I have a drone",
+      "out": {
+        "kind": "offer",
+        "capability_tags": [
+          "unknown:drone"
+        ],
+        "quantity": null,
+        "urgency": 0.0,
+        "features": [],
+        "location_text": "",
+        "language": "en",
+        "confidence": 0.55,
+        "source": "keyword"
+      }
+    },
+    {
+      "text": "hamare paas drone hai",
+      "out": {
+        "kind": "offer",
+        "capability_tags": [
+          "unknown:drone"
+        ],
+        "quantity": null,
+        "urgency": 0.0,
+        "features": [],
+        "location_text": "",
+        "language": "hi",
+        "confidence": 0.55,
+        "source": "keyword"
+      }
+    },
+    {
+      "text": "2 people trapped, help in 2 hours",
+      "out": {
+        "kind": "need",
+        "capability_tags": [],
+        "quantity": 2,
+        "urgency": 0.475,
+        "features": [
+          "trapped"
+        ],
+        "location_text": "",
+        "language": "en",
+        "confidence": 0.65,
+        "source": "keyword"
+      }
+    },
+    {
+      "text": "",
+      "out": {
+        "kind": "unknown",
+        "capability_tags": [],
+        "quantity": null,
+        "urgency": 0.2,
+        "features": [],
+        "location_text": "",
+        "language": "unknown",
+        "confidence": 0.0,
+        "source": "keyword"
+      }
+    },
+    {
+      "text": "!!! ??? ...",
+      "out": {
+        "kind": "unknown",
+        "capability_tags": [],
+        "quantity": null,
+        "urgency": 0.2,
+        "features": [],
+        "location_text": "",
+        "language": "unknown",
+        "confidence": 0.0,
+        "source": "keyword"
+      }
+    },
+    {
+      "text": "asdf qwer",
+      "out": {
+        "kind": "unknown",
+        "capability_tags": [],
+        "quantity": null,
+        "urgency": 0.2,
+        "features": [],
+        "location_text": "",
+        "language": "en",
+        "confidence": 0.35,
+        "source": "keyword"
+      }
+    },
+    {
+      "text": "need a doctor for unconscious child",
+      "out": {
+        "kind": "need",
+        "capability_tags": [
+          "medic"
+        ],
+        "quantity": null,
+        "urgency": 0.643,
+        "features": [
+          "child",
+          "unconscious"
+        ],
+        "location_text": "",
+        "language": "en",
+        "confidence": 0.85,
+        "source": "keyword"
+      }
+    },
+    {
+      "text": "oxygen cylinder chahiye",
+      "out": {
+        "kind": "need",
+        "capability_tags": [
+          "oxygen"
+        ],
+        "quantity": null,
+        "urgency": 0.44,
+        "features": [
+          "medication_dependent"
+        ],
+        "location_text": "",
+        "language": "hi",
+        "confidence": 0.85,
+        "source": "keyword"
+      }
+    },
+    {
+      "text": "have nahi paani grandfather",
+      "out": {
+        "kind": "need",
+        "capability_tags": [
+          "water"
+        ],
+        "quantity": null,
+        "urgency": 0.37,
+        "features": [
+          "elderly"
+        ],
+        "location_text": "",
+        "language": "mixed",
+        "confidence": 0.85,
+        "source": "keyword"
+      }
+    },
+    {
+      "text": "doctor have boat have need doctor trapped",
+      "out": {
+        "kind": "need",
+        "capability_tags": [
+          "medic",
+          "boat"
+        ],
+        "quantity": null,
+        "urgency": 0.475,
+        "features": [
+          "trapped"
+        ],
+        "location_text": "",
+        "language": "en",
+        "confidence": 0.85,
+        "source": "keyword"
+      }
+    },
+    {
+      "text": "चाहिए चाहिए doctor nahi nahi doctor insulin",
+      "out": {
+        "kind": "need",
+        "capability_tags": [
+          "medic",
+          "insulin"
+        ],
+        "quantity": null,
+        "urgency": 0.44,
+        "features": [
+          "medication_dependent"
+        ],
+        "location_text": "",
+        "language": "mixed",
+        "confidence": 0.85,
+        "source": "keyword"
+      }
+    },
+    {
+      "text": "paani चाहिए paani nahi insulin need boat paani",
+      "out": {
+        "kind": "need",
+        "capability_tags": [
+          "water",
+          "insulin",
+          "boat"
+        ],
+        "quantity": null,
+        "urgency": 0.44,
+        "features": [
+          "medication_dependent"
+        ],
+        "location_text": "",
+        "language": "mixed",
+        "confidence": 0.85,
+        "source": "keyword"
+      }
+    },
+    {
+      "text": "need trapped need trapped doctor have insulin",
+      "out": {
+        "kind": "need",
+        "capability_tags": [
+          "medic",
+          "insulin"
+        ],
+        "quantity": null,
+        "urgency": 0.58,
+        "features": [
+          "medication_dependent",
+          "trapped"
+        ],
+        "location_text": "",
+        "language": "en",
+        "confidence": 0.85,
+        "source": "keyword"
+      }
+    },
+    {
+      "text": "insulin insulin have doctor paani grandfather boat need",
+      "out": {
+        "kind": "need",
+        "capability_tags": [
+          "insulin",
+          "medic",
+          "water",
+          "boat"
+        ],
+        "quantity": null,
+        "urgency": 0.496,
+        "features": [
+          "elderly",
+          "medication_dependent"
+        ],
+        "location_text": "",
+        "language": "mixed",
+        "confidence": 0.85,
+        "source": "keyword"
+      }
+    },
+    {
+      "text": "doctor चाहिए trapped insulin",
+      "out": {
+        "kind": "need",
+        "capability_tags": [
+          "medic",
+          "insulin"
+        ],
+        "quantity": null,
+        "urgency": 0.58,
+        "features": [
+          "medication_dependent",
+          "trapped"
+        ],
+        "location_text": "",
+        "language": "mixed",
+        "confidence": 0.85,
+        "source": "keyword"
+      }
+    },
+    {
+      "text": "trapped insulin nahi insulin have grandfather nahi have",
+      "out": {
+        "kind": "need",
+        "capability_tags": [
+          "insulin"
+        ],
+        "quantity": null,
+        "urgency": 0.622,
+        "features": [
+          "elderly",
+          "medication_dependent",
+          "trapped"
+        ],
+        "location_text": "",
+        "language": "en",
+        "confidence": 0.85,
+        "source": "keyword"
+      }
+    },
+    {
+      "text": "have चाहिए grandfather need trapped have",
+      "out": {
+        "kind": "need",
+        "capability_tags": [],
+        "quantity": null,
+        "urgency": 0.5275,
+        "features": [
+          "elderly",
+          "trapped"
+        ],
+        "location_text": "",
+        "language": "mixed",
+        "confidence": 0.65,
+        "source": "keyword"
+      }
+    },
+    {
+      "text": "paani grandfather nahi have have boat चाहिए have",
+      "out": {
+        "kind": "need",
+        "capability_tags": [
+          "water",
+          "boat"
+        ],
+        "quantity": null,
+        "urgency": 0.37,
+        "features": [
+          "elderly"
+        ],
+        "location_text": "",
+        "language": "mixed",
+        "confidence": 0.85,
+        "source": "keyword"
+      }
+    },
+    {
+      "text": "trapped boat boat doctor doctor",
+      "out": {
+        "kind": "need",
+        "capability_tags": [
+          "boat",
+          "medic"
+        ],
+        "quantity": null,
+        "urgency": 0.475,
+        "features": [
+          "trapped"
+        ],
+        "location_text": "",
+        "language": "en",
+        "confidence": 0.85,
+        "source": "keyword"
+      }
+    },
+    {
+      "text": "grandfather boat insulin",
+      "out": {
+        "kind": "need",
+        "capability_tags": [
+          "boat",
+          "insulin"
+        ],
+        "quantity": null,
+        "urgency": 0.496,
+        "features": [
+          "elderly",
+          "medication_dependent"
+        ],
+        "location_text": "",
+        "language": "en",
+        "confidence": 0.85,
+        "source": "keyword"
+      }
+    },
+    {
+      "text": "need trapped insulin insulin",
+      "out": {
+        "kind": "need",
+        "capability_tags": [
+          "insulin"
+        ],
+        "quantity": null,
+        "urgency": 0.58,
+        "features": [
+          "medication_dependent",
+          "trapped"
+        ],
+        "location_text": "",
+        "language": "en",
+        "confidence": 0.85,
+        "source": "keyword"
+      }
+    },
+    {
+      "text": "need have have",
+      "out": {
+        "kind": "need",
+        "capability_tags": [],
+        "quantity": null,
+        "urgency": 0.3,
+        "features": [],
+        "location_text": "",
+        "language": "en",
+        "confidence": 0.55,
+        "source": "keyword"
+      }
+    },
+    {
+      "text": "insulin have grandfather",
+      "out": {
+        "kind": "offer",
+        "capability_tags": [
+          "insulin"
+        ],
+        "quantity": null,
+        "urgency": 0.0,
+        "features": [],
+        "location_text": "",
+        "language": "en",
+        "confidence": 0.85,
+        "source": "keyword"
+      }
+    },
+    {
+      "text": "trapped nahi चाहिए need trapped need boat",
+      "out": {
+        "kind": "need",
+        "capability_tags": [
+          "boat"
+        ],
+        "quantity": null,
+        "urgency": 0.475,
+        "features": [
+          "trapped"
+        ],
+        "location_text": "",
+        "language": "mixed",
+        "confidence": 0.85,
+        "source": "keyword"
+      }
+    },
+    {
+      "text": "have nahi need",
+      "out": {
+        "kind": "need",
+        "capability_tags": [
+          "unknown:nahi"
+        ],
+        "quantity": null,
+        "urgency": 0.3,
+        "features": [],
+        "location_text": "",
+        "language": "en",
+        "confidence": 0.55,
+        "source": "keyword"
+      }
+    },
+    {
+      "text": "insulin trapped have trapped",
+      "out": {
+        "kind": "offer",
+        "capability_tags": [
+          "insulin"
+        ],
+        "quantity": null,
+        "urgency": 0.0,
+        "features": [],
+        "location_text": "",
+        "language": "en",
+        "confidence": 0.85,
+        "source": "keyword"
+      }
+    },
+    {
+      "text": "need grandfather grandfather grandfather",
+      "out": {
+        "kind": "need",
+        "capability_tags": [],
+        "quantity": null,
+        "urgency": 0.37,
+        "features": [
+          "elderly"
+        ],
+        "location_text": "",
+        "language": "en",
+        "confidence": 0.65,
+        "source": "keyword"
+      }
+    },
+    {
+      "text": "insulin insulin doctor nahi",
+      "out": {
+        "kind": "need",
+        "capability_tags": [
+          "insulin",
+          "medic"
+        ],
+        "quantity": null,
+        "urgency": 0.44,
+        "features": [
+          "medication_dependent"
+        ],
+        "location_text": "",
+        "language": "en",
+        "confidence": 0.85,
+        "source": "keyword"
+      }
+    },
+    {
+      "text": "have nahi boat have nahi trapped",
+      "out": {
+        "kind": "need",
+        "capability_tags": [
+          "boat"
+        ],
+        "quantity": null,
+        "urgency": 0.475,
+        "features": [
+          "trapped"
+        ],
+        "location_text": "",
+        "language": "en",
+        "confidence": 0.85,
+        "source": "keyword"
+      }
+    },
+    {
+      "text": "चाहिए trapped insulin trapped nahi trapped",
+      "out": {
+        "kind": "need",
+        "capability_tags": [
+          "insulin"
+        ],
+        "quantity": null,
+        "urgency": 0.58,
+        "features": [
+          "medication_dependent",
+          "trapped"
+        ],
+        "location_text": "",
+        "language": "mixed",
+        "confidence": 0.85,
+        "source": "keyword"
+      }
+    },
+    {
+      "text": "grandfather need insulin have grandfather need insulin",
+      "out": {
+        "kind": "need",
+        "capability_tags": [
+          "insulin"
+        ],
+        "quantity": null,
+        "urgency": 0.496,
+        "features": [
+          "elderly",
+          "medication_dependent"
+        ],
+        "location_text": "",
+        "language": "en",
+        "confidence": 0.85,
+        "source": "keyword"
+      }
+    },
+    {
+      "text": "have paani need grandfather doctor grandfather grandfather",
+      "out": {
+        "kind": "need",
+        "capability_tags": [
+          "water",
+          "medic"
+        ],
+        "quantity": null,
+        "urgency": 0.37,
+        "features": [
+          "elderly"
+        ],
+        "location_text": "",
+        "language": "mixed",
+        "confidence": 0.85,
+        "source": "keyword"
+      }
+    },
+    {
+      "text": "trapped doctor need have need need grandfather",
+      "out": {
+        "kind": "need",
+        "capability_tags": [
+          "medic"
+        ],
+        "quantity": null,
+        "urgency": 0.5275,
+        "features": [
+          "elderly",
+          "trapped"
+        ],
+        "location_text": "",
+        "language": "en",
+        "confidence": 0.85,
+        "source": "keyword"
+      }
+    }
+  ],
+  "urgency": [
+    {
+      "kind": "need",
+      "features": [
+        "not_breathing"
+      ],
+      "u": 0.65
+    },
+    {
+      "kind": "need",
+      "features": [
+        "child",
+        "trapped"
+      ],
+      "u": 0.5537
+    },
+    {
+      "kind": "offer",
+      "features": [
+        "trapped"
+      ],
+      "u": 0.0
+    },
+    {
+      "kind": "unknown",
+      "features": [],
+      "u": 0.2
+    }
+  ],
+  "bad_kind_rejected": true
+}

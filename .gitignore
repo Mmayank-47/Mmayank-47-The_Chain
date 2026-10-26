@@ -12,6 +12,13 @@ htmlcov/
 .DS_Store
 .idea/
 .vscode/
+.gradle/
+local.properties
+*.iml
+.cxx/
+captures/
+*.apk
+*.aab
 # stray patch files: changes land as commits, not as *.patch in the tree
 *.patch
 *.orig

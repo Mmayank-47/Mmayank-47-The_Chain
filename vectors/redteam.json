@@ -1,0 +1,68 @@
+{
+  "attacks": [
+    {
+      "name": "forged_credentials",
+      "undefended": 1.0,
+      "defended": 0.0,
+      "max_ok": 0.0,
+      "ok": true,
+      "note": "forged + revoked medic credentials"
+    },
+    {
+      "name": "sybil_swarm",
+      "undefended": 1.0,
+      "defended": 0.0,
+      "max_ok": 0.0,
+      "ok": true,
+      "note": "40 fake identities: vouch ring + same-place claims"
+    },
+    {
+      "name": "packet_flood",
+      "undefended": 1.0,
+      "defended": 0.034,
+      "max_ok": 0.1,
+      "ok": true,
+      "note": "17/500 flood packets got through"
+    },
+    {
+      "name": "lure_into_floodwater",
+      "undefended": 1.0,
+      "defended": 0.0,
+      "max_ok": 0.0,
+      "ok": true,
+      "note": "fake 'route is safe' claims over flood"
+    },
+    {
+      "name": "decoy_emergencies",
+      "undefended": 0.2,
+      "defended": 0.0,
+      "max_ok": 0.0,
+      "ok": true,
+      "note": "passive M3 only vs challenge-response + reputation hit"
+    },
+    {
+      "name": "hazard_poisoning",
+      "undefended": 1.0,
+      "defended": 0.0,
+      "max_ok": 0.0,
+      "ok": true,
+      "note": "10 fake reporters per cell, weight = trust"
+    },
+    {
+      "name": "battery_curve_fraud",
+      "undefended": 1.0,
+      "defended": 0.0,
+      "max_ok": 0.0,
+      "ok": true,
+      "note": "flat or rising battery curves"
+    },
+    {
+      "name": "store_flooding",
+      "undefended": 1.0,
+      "defended": 0.064,
+      "max_ok": 0.1,
+      "ok": true,
+      "note": "32/500 flood quota capped, stranger lane 1 allowed"
+    }
+  ]
+}

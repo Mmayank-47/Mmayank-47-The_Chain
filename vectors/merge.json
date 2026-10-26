@@ -1,0 +1,12 @@
+{
+  "did": "claim-1|A",
+  "ingested": 4,
+  "winners_a": {
+    "claim-1": "claim-1|A"
+  },
+  "winners_b": {
+    "claim-1": "claim-1|A"
+  },
+  "forged_dropped": true,
+  "event_hash": "c00aa0c5a7f1673a6587d5352f9319673b8b573ce5e79bb0ccca4dc86898b876"
+}

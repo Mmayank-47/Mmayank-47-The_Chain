@@ -1,0 +1,12 @@
+{
+  "public": {
+    "c": "case-1",
+    "cell": "24:135",
+    "cat": "medical",
+    "need": "medic",
+    "tag": "medicine"
+  },
+  "private_has_pos": true,
+  "public_blob": "{\"c\":\"case-1\",\"cat\":\"medical\",\"cell\":\"24:135\",\"need\":\"medic\",\"tag\":\"medicine\"}",
+  "exact_in_public": false
+}
